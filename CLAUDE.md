@@ -9,6 +9,10 @@
   forma práctica, intuitiva y orgánica. Proponer pequeños ejercicios y preguntas.
 - Enseñar Git en el camino: en cada commit/push explicar qué se hizo y qué comando
   equivalente usaría el usuario (ver `docs/00_git_para_principiantes.md`).
+- **Partir de cero:** no asumir que sabe usar la terminal, VS Code o Arduino IDE.
+  Decir siempre DÓNDE se escribe cada cosa (terminal de VS Code, Arduino IDE,
+  Monitor Serie), qué debe ver en pantalla y avanzar UN paso a la vez,
+  esperando su confirmación antes de seguir.
 - Idioma: español. Código y comentarios en español.
 
 ## Entorno del usuario
