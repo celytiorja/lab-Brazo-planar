@@ -1,0 +1,20 @@
+# Este archivo le dice a Git qué NO debe guardar.
+# Regla general: no se guarda lo que se puede regenerar (cachés, entornos, compilados).
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Editores / sistema
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Arduino (compilados)
+build/
+*.bin
+*.elf

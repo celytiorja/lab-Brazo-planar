@@ -1,0 +1,6 @@
+# Dependencias de Python. Instalar con:  pip install -r requirements.txt
+numpy>=1.26
+matplotlib>=3.8
+pyserial>=3.5
+pandas>=2.1
+pytest>=8.0
