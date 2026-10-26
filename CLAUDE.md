@@ -17,7 +17,10 @@
 
 ## Entorno del usuario
 
-- Windows 11, VS Code, Python. Arduino IDE para el ESP32.
+- Windows 11, VS Code, Python 3.12. Arduino IDE para el ESP32.
+- Repo clonado en `C:\Users\juanp\Documents\lab-Brazo-planar` (NO es la carpeta
+  "Documentos" de OneDrive que muestra el Explorador; para abrirla: `explorer .`
+  desde la terminal). Entorno virtual en `.venv` (activar: `.venv\Scripts\activate`).
 - **Ya sabe usar Arduino IDE y programar el ESP32** (placa y carga ya funcionan):
   no explicar instalación de placas ni lo básico de Arduino.
 - Hardware: ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521).
