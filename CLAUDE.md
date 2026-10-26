@@ -18,7 +18,11 @@
 ## Entorno del usuario
 
 - Windows 11, VS Code, Python. Arduino IDE para el ESP32.
+- **Ya sabe usar Arduino IDE y programar el ESP32** (placa y carga ya funcionan):
+  no explicar instalación de placas ni lo básico de Arduino.
 - Hardware: ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521).
+- Orden de pruebas elegido por el usuario: primero solo servos
+  (`firmware/prueba_servos`), las IMU después.
 - Alimentación de servos: cargador de 5 V / 68 W (verificar corriente real a 5 V).
 
 ## Proyecto

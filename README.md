@@ -14,7 +14,8 @@ docs/
   01_cinematica.md               ← teoría de cinemática directa e inversa
   02_conexiones.md               ← pines, diagrama y alimentación
 firmware/
-  prueba_hardware/               ← sketch de Arduino para probar el cableado
+  prueba_servos/                 ← sketch para probar solo los dos servos
+  prueba_hardware/               ← sketch para probar servos + IMU juntos
 python/
   parametros.py                  ← L1, L2 y límites de las articulaciones
   cinematica.py                  ← cinemática directa e inversa
