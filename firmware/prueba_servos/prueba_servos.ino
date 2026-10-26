@@ -7,6 +7,7 @@
     h 90   -> servo del HOMBRO a 90°
     c 45   -> servo del CODO a 45°
     b      -> barrido lento 0° -> 180° -> 90° del hombro y luego del codo
+    h 45, c 120  -> varias órdenes en una línea, separadas por comas
 
   Librería necesaria: "ESP32Servo" de Kevin Harrington.
 
@@ -50,15 +51,18 @@ void barrido() {
   Serial.println("Listo. Ambos en 90°.");
 }
 
-void procesarComando(String linea) {
-  linea.trim();
-  if (linea == "b") { barrido(); return; }
-  if (linea.length() < 3) {
+// Una sola orden: "h 45", "h45", "c 120" o "b".
+void procesarOrden(String orden) {
+  orden.trim();
+  if (orden == "b") { barrido(); return; }
+  if (orden.length() < 2) {
     Serial.println("Ordenes: 'h <0-180>', 'c <0-180>' o 'b'");
     return;
   }
-  char cual = linea.charAt(0);
-  int angulo = constrain(linea.substring(2).toInt(), 0, 180);
+  char cual = orden.charAt(0);
+  // toInt() salta los espacios del inicio y lee dígitos hasta el primer
+  // carácter que no sea número; por eso sirven "h 45" y "h45".
+  int angulo = constrain(orden.substring(1).toInt(), 0, 180);
   if (cual == 'h') {
     servoHombro.write(angulo);
     Serial.printf("Hombro -> %d°\n", angulo);
@@ -67,6 +71,21 @@ void procesarComando(String linea) {
     Serial.printf("Codo -> %d°\n", angulo);
   } else {
     Serial.println("Ordenes: 'h <0-180>', 'c <0-180>' o 'b'");
+  }
+}
+
+// Una línea puede traer varias órdenes separadas por comas: "h 45, c 90".
+// Se recorre la línea cortándola en cada coma y se procesa cada trozo.
+void procesarComando(String linea) {
+  int inicio = 0;
+  while (true) {
+    int coma = linea.indexOf(',', inicio);   // -1 si ya no hay más comas
+    if (coma == -1) {
+      procesarOrden(linea.substring(inicio));
+      break;
+    }
+    procesarOrden(linea.substring(inicio, coma));
+    inicio = coma + 1;
   }
 }
 
