@@ -13,14 +13,18 @@ docs/
   00_git_para_principiantes.md   ← empieza aquí si es tu primera vez con Git
   01_cinematica.md               ← teoría de cinemática directa e inversa
   02_conexiones.md               ← pines, diagrama y alimentación
+  03_interfaz.md                 ← cómo funciona la interfaz y la calibración
 firmware/
   prueba_servos/                 ← sketch para probar solo los dos servos
   prueba_hardware/               ← sketch para probar servos + IMU juntos
 python/
-  parametros.py                  ← L1, L2 y límites de las articulaciones
+  parametros.py                  ← L1, L2 y calibración de los servos
   cinematica.py                  ← cinemática directa e inversa
-  simulador.py                   ← simulador interactivo
-  test_cinematica.py             ← pruebas automáticas
+  servos.py                      ← traducción θ del modelo ↔ ángulo del servo
+  conexion.py                    ← comunicación serie con el ESP32
+  simulador.py                   ← simulador interactivo (sin hardware)
+  interfaz.py                    ← interfaz gráfica que mueve el brazo real
+  test_*.py                      ← pruebas automáticas
 requirements.txt                 ← dependencias de Python
 ```
 
@@ -34,6 +38,7 @@ py -m venv .venv
 pip install -r requirements.txt
 python -m pytest python/          # deben pasar todas las pruebas
 python python/simulador.py        # simulador interactivo
+python python/interfaz.py         # mover el brazo real (ESP32 con prueba_servos)
 ```
 
 Un *entorno virtual* (`.venv`) es una instalación de Python solo para este proyecto,

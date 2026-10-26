@@ -26,6 +26,10 @@
 - Hardware: ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521).
 - Orden de pruebas elegido por el usuario: primero solo servos
   (`firmware/prueba_servos`), las IMU después.
+- ✅ Servos validados (2026-10-26): se mueven juntos, sin zumbido en 0°/180° con
+  pulso 500–2500 µs, el ESP32 no se reinicia con la fuente actual.
+- Interfaz (`python/interfaz.py`) usa el protocolo de `prueba_servos`
+  ("h <0-180>, c <0-180>\n"). Calibración servo↔θ en `parametros.py` (provisional).
 - Alimentación de servos: cargador de 5 V / 68 W (verificar corriente real a 5 V).
 
 ## Proyecto
