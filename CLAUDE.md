@@ -40,6 +40,41 @@
   correlación cruzada, integración de Euler con media móvil (≥2 ventanas),
   gráficas + tabla de métricas. Brazo movido desde interfaz gráfica en PC.
 
+## Estado al cierre de la sesión del 2026-10-26 (retomar desde aquí)
+
+Hecho y funcionando:
+- Git: instaló Git 2.56, clonó, sabe `status`, `log --oneline`, `diff`, `pull`,
+  `add`, `commit`, `push`. Primer commit propio: `2f1a9a7` (L1=105 mm, L2=85 mm),
+  autor "Cely". Ya inició sesión en GitHub desde Windows. Conoce el visor `less`
+  (salir con `q`); se le sugirió `git config --global core.pager ""` (opcional).
+- Python: `.venv` creado, dependencias instaladas, 11 pruebas pasan, usó el simulador.
+- Brazo montado (sin IMU). Servos validados. Interfaz conecta y mueve el brazo real.
+- Calibración: el codo giraba al revés → el usuario cambió `CODO_SIGNO` a −1 en
+  su PC y funcionó. ⚠️ Ese cambio está GUARDADO en su disco pero quizá NO
+  commiteado: lo primero mañana es que él haga `git status` y, si sale
+  `modified: python/parametros.py`, el ciclo add → commit → push. No editar
+  `parametros.py` desde aquí hasta que lo suba (evitar conflictos).
+- Aprendió a depurar siguiendo la cadena dibujo → texto "Servos" → respuesta
+  del ESP32 → servo físico, y que Python no se compila pero hay que reiniciar
+  el programa para que lea cambios. Lección: guardar (Ctrl+S / Auto Save).
+
+Pendiente (en este orden):
+1. Commit del `CODO_SIGNO = -1` (lo hace él).
+2. Terminar calibración: medir `CODO_OFFSET` real (valor de `c` con brazo recto),
+   verificar `HOMBRO_OFFSET`/`HOMBRO_SIGNO` (θ1=0 → eslabón 1 hacia +x;
+   "Ir a posición de inicio" debe dejar el brazo recto hacia +y). Cambiar el
+   comentario "PROVISIONALES" de L1/L2 en `parametros.py`.
+3. Punto 1 de la entrega: tabla de posiciones de referencia (θ teórico vs punta
+   medida en papel milimetrado), error por punto, RMSE y error máximo; explicar
+   causas (offset, signo, backlash, resolución 1°, flexión). Ya se le explicó con
+   números que un offset del hombro NO rompe la coincidencia codo arriba/abajo y
+   uno del codo SÍ.
+4. Conectar las IMU (AD0 de IMU2 a 3.3 V) y probar con `firmware/prueba_hardware`.
+5. Firmware de adquisición (timestamp µs, ~100 Hz, CSV) + captura en la interfaz;
+   luego puntos 2–5 de la entrega (estadística, matriz R, correlación cruzada,
+   Euler + media móvil, gráficas y tabla).
+- Sigue pendiente que diga la corriente a 5 V de la etiqueta del cargador.
+
 ## Convenciones
 
 - Pines: ver `docs/02_conexiones.md` (servos GPIO25/26, I2C GPIO21/22,
