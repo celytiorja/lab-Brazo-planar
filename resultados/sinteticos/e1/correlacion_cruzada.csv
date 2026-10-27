@@ -1,0 +1,4 @@
+par,relacion_fisica,retraso_ms,coef_pico
+consigna θ1 → θ1 medido (integración),el eslabón sigue a la consigna del servo,66.6472,0.985354
+consigna θ2 → θ2 medido (integración),el eslabón sigue a la consigna del servo,76.0846,0.985204
+"w1 (IMU1) → w2 (IMU2), codo fijo",con el codo quieto ω2 = ω1,-0.00897575,0.999994

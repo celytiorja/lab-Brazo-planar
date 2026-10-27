@@ -1,0 +1,10 @@
+fuente,sigma_alfa_reposo_dps2
+"giro crudo, diferencia hacia atrás",8.40019
+"giro crudo, diferencia central",3.88068
+"Media móvil N=5 + Euler, hacia atrás",1.62661
+"Media móvil N=21 + Euler, hacia atrás",0.443275
+"Kalman Q_baja, hacia atrás",1.65512
+"Kalman Q_media, hacia atrás",1.63936
+"Kalman Q_alta, hacia atrás",4.21191
+TEÓRICO hacia atrás: √2·σω/Δt,7.96966
+TEÓRICO central: σω/(√2·Δt),3.98483

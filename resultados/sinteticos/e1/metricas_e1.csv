@@ -1,0 +1,7 @@
+metodo,articulacion,ruido_omega_reposo_dps,deriva_reposo_30s_deg,retraso_vs_directa_ms,error_estacionario_rms_deg,deriva_final_perfil_deg,ruido_angulo_reposo_deg
+Integración directa,θ1,0.060523,-0.0396103,0,0.641042,0.0279084,0.00188152
+Integración directa,θ2,0.0594947,-0.0920896,0,0.807124,-1.36643,0.00221106
+Media móvil N=5 + Euler,θ1,0.0267068,-0.0416724,19.2744,0.641197,0.0186301,0.00183554
+Media móvil N=5 + Euler,θ2,0.0265139,-0.0916231,19.8219,0.801063,-1.34976,0.00212674
+Media móvil N=21 + Euler,θ1,0.013246,-0.0442959,98.9649,0.64095,0.0130421,0.00170907
+Media móvil N=21 + Euler,θ2,0.0124989,-0.0911015,99.7919,0.79952,-1.34499,0.00197061

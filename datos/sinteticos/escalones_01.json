@@ -1,0 +1,73 @@
+{
+  "sintetico": true,
+  "advertencia": "DATOS SINTÉTICOS generados por python/generar_datos_sinteticos.py. No son mediciones.",
+  "modo": "perfil",
+  "perfil": 1,
+  "perfil_nombre": "escalones",
+  "duracion_s": 25.989973,
+  "muestras": 2599,
+  "config_imu": {
+    "version_firmware": "adquisicion-1.0",
+    "baudios": 460800,
+    "fs_hz": 100.0,
+    "dlpf_hz": 44,
+    "gyro_lsb_por_dps": 65.5,
+    "acc_lsb_por_g": 16384.0,
+    "eje_giro": {
+      "1": [
+        "gz",
+        1
+      ],
+      "2": [
+        "gz",
+        1
+      ]
+    },
+    "plano_vertical": false,
+    "ejes_inclinacion": {
+      "1": [
+        [
+          "ax",
+          1
+        ],
+        [
+          "ay",
+          1
+        ]
+      ],
+      "2": [
+        [
+          "ax",
+          1
+        ],
+        [
+          "ay",
+          1
+        ]
+      ]
+    },
+    "offset_inclinacion_deg": {
+      "1": 0.0,
+      "2": 0.0
+    }
+  },
+  "calibracion": {
+    "hombro_offset": 0.0,
+    "hombro_signo": 1,
+    "codo_offset": 90.0,
+    "codo_signo": 1,
+    "L1_mm": 105.0,
+    "L2_mm": 85.0
+  },
+  "simulacion": {
+    "tau_servo_s": 0.06,
+    "vel_max_servo": 350.0,
+    "sigma_giro": 0.06,
+    "sigma_vibracion": 0.4,
+    "sigma_acel": 0.003,
+    "bias_inicial_dps": [
+      0.0776,
+      -0.2466
+    ]
+  }
+}

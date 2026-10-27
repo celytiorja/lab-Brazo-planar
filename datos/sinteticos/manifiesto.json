@@ -1,0 +1,15 @@
+{
+  "origen": "sinteticos",
+  "estatico": "datos/sinteticos/estatico_01.csv",
+  "dinamico_e1": "datos/sinteticos/escalones_01.csv",
+  "ajuste": [
+    "datos/sinteticos/escalones_01.csv",
+    "datos/sinteticos/seno_lento_01.csv",
+    "datos/sinteticos/seno_rapido_01.csv"
+  ],
+  "validacion": [
+    "datos/sinteticos/escalones_02.csv",
+    "datos/sinteticos/seno_lento_02.csv",
+    "datos/sinteticos/seno_rapido_02.csv"
+  ]
+}
