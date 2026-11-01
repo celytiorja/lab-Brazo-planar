@@ -1,0 +1,4 @@
+tipo,n,rmse_mm,media_mm,max_mm,sigma_resolucion_media_mm
+todos,20,5.94962,5.83079,8.23924,0.99168
+directa,10,6.21004,6.06903,8.23924,1.03697
+inversa,10,5.67727,5.59255,7.15845,0.946391

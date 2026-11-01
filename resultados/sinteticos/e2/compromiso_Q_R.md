@@ -48,4 +48,4 @@
 | seno_rapido_01 | 28.2 | 1.46 | 3.984 | 0.83 | 28.2 | 0.04653 | 0.6632 |
 | seno_rapido_01 | 40 | 3.757 | 10.25 | 0.919 | 40 | 0.05144 | 0.2878 |
 
-Generado por código · commit 379fa91+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json
+Generado por código · commit 103dfa9+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json

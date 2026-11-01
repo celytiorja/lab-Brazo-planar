@@ -1,0 +1,38 @@
+{
+  "resumen": [
+    {
+      "tipo": "todos",
+      "n": 20,
+      "rmse_mm": 5.94962015594273,
+      "media_mm": 5.8307907303492374,
+      "max_mm": 8.239235401419231,
+      "sigma_resolucion_media_mm": 0.9916804434069533
+    },
+    {
+      "tipo": "directa",
+      "n": 10,
+      "rmse_mm": 6.210040257518465,
+      "media_mm": 6.069031868531311,
+      "max_mm": 8.239235401419231,
+      "sigma_resolucion_media_mm": 1.036969848789898
+    },
+    {
+      "tipo": "inversa",
+      "n": 10,
+      "rmse_mm": 5.677266948100995,
+      "media_mm": 5.592549592167163,
+      "max_mm": 7.158449552801221,
+      "sigma_resolucion_media_mm": 0.9463910380240084
+    }
+  ],
+  "fuentes_de_error": {
+    "offset_estimado_theta1_deg": 0.6157534578911188,
+    "offset_estimado_theta2_deg": 2.6733450040733895,
+    "rmse_sin_corregir_mm": 5.94962015594273,
+    "rmse_corrigiendo_offsets_mm": 1.4429715919466166,
+    "repetibilidad_media_mm": 1.7443216784749738,
+    "repetibilidad_max_mm": 2.7459060435492058,
+    "sigma_resolucion_1grado_mm": 0.9916804434069533
+  },
+  "archivo": "verificacion_cinematica.csv"
+}

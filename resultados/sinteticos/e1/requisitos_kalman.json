@@ -1,0 +1,44 @@
+{
+  "sigma_giro_dps": [
+    0.06054180471023034,
+    0.059504834996527194
+  ],
+  "R": [
+    [
+      0.0036653101175716683,
+      6.121629090726642e-05
+    ],
+    [
+      6.121629090726642e-05,
+      0.003540825387963927
+    ]
+  ],
+  "estructura_R": {
+    "rho_w1_w2": 0.016992582771980756,
+    "decision_R": "diagonal",
+    "umbral": 0.1
+  },
+  "deriva_sin_compensar_deg_min": [
+    21.297309060089287,
+    6.808725082033913
+  ],
+  "deriva_compensada_deg_min": [
+    -0.1713923876418157,
+    -0.352283471381188
+  ],
+  "media_movil_para_reducir_ruido_a_la_mitad": {
+    "N": 5,
+    "retraso_ms": 19.274387788185393
+  },
+  "deriva_final_perfil_por_metodo_deg": {
+    "Integración directa": 0.697171407559781,
+    "Media móvil N=21 + Euler": 0.6790174765036467,
+    "Media móvil N=5 + Euler": 0.6841953927161187
+  },
+  "cociente_ruido_movimiento_reposo": 30.25997726004457,
+  "requisitos": {
+    "retraso_max_ms": 40.0,
+    "ruido_omega_max_dps": 0.026653080908740474,
+    "deriva": "no observable con solo giroscopio: acotarla con el sesgo del reposo y declararla; corregirla exige referencia absoluta (acelerómetro en plano vertical, encoder o cámara)"
+  }
+}

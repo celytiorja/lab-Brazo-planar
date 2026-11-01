@@ -61,9 +61,42 @@ las IMU) deben moverse **junto al negro punteado** (la consigna).
 - **Ajuste y validación son SIEMPRE capturas distintas**: las `_01` son de ajuste y las `_02`
   de validación.
 
+## 4b. Verificación de la cinemática (punto 1 de la Entrega 1)
+
+Aquí no hacen falta las IMU: se mide **dónde queda la punta** del brazo real.
+
+1. Crea la hoja de medición: `python python/verificacion_cinematica.py --plantilla`.
+   Se crea `datos/verificacion_cinematica.csv` con 10 puntos: 5 de **directa** (ángulos de
+   servo elegidos) y 5 de **inversa** (punto (x, y) elegido, convertido a ángulos). Cada uno
+   aparece **2 veces** (`repeticion` 1 y 2), para medir la repetibilidad.
+2. Prepara el papel milimetrado:
+   - **Origen (0, 0) = eje de giro del hombro.** Pega el papel de modo que el centro del eje
+     caiga sobre una intersección.
+   - **Eje x = dirección del eslabón 1 cuando θ1 = 0°.** Manda ese ángulo con la interfaz y traza
+     la línea a lo largo del eslabón.
+   - **Eje y** = perpendicular, hacia donde apunta el brazo con θ1 = 90°.
+   - Marca en la punta del eslabón 2 un punto fino (la "punta" de las medidas L1 y L2).
+3. Para cada fila, manda `servo_h` y `servo_c` (Monitor Serie con `prueba_servos`:
+   `h 45, c 90`, o la interfaz). Espera 1 s y anota **x_med_mm** e **y_med_mm** de la punta.
+   Para la repetición 2, mueve antes el brazo a otro punto y vuelve: así se ve el juego de los
+   engranajes.
+4. Guarda el CSV (en VS Code o Excel, **sin cambiar las columnas**) y ejecuta
+   `python python/verificacion_cinematica.py`.
+
+Resultado en `resultados/reales/e1/`:
+
+- `verificacion_cinematica.md`: error por punto.
+- `verificacion_cinematica_resumen.md`: RMSE, máximo, por tipo, repetibilidad, error esperado
+  solo por la resolución de 1° y **offsets estimados** de cada articulación.
+- `09_verificacion_cinematica.png`: el gráfico.
+
+Si los offsets estimados son grandes (> 1°), corrígelos en `python/parametros.py` y vuelve a
+medir.
+
 ## 5. Generar los resultados
 
 ```
+python python/validar_datos.py      (opcional: analisis_e1 ya la ejecuta primero)
 python python/analisis_e1.py
 python python/analisis_e2.py
 ```
@@ -74,7 +107,7 @@ archivos son los mismos que con los datos sintéticos (ver `docs/SUSTENTACION.md
 ## 6. Guardar en Git (evidencia con versión identificada)
 
 ```
-git add datos/crudos resultados/reales python/config_imu.py
+git add datos/crudos datos/verificacion_cinematica.csv resultados/reales python/config_imu.py
 git commit -m "Capturas reales y resultados de las Entregas 1 y 2"
 git push
 ```

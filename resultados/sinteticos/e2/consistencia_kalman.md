@@ -14,4 +14,4 @@
 
 NIS = yᵀS⁻¹y ~ χ²(2) si el modelo es correcto: media ≈ 2 y ~95 % de las muestras dentro de la banda. autocorr_innov_lag1 ≈ 0 si las innovaciones son blancas. P debe ser simétrica (asimetría ≈ 0) y positiva (autovalor mínimo > 0).
 
-Generado por código · commit 379fa91+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json
+Generado por código · commit 103dfa9+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json

@@ -1,0 +1,7 @@
+metodo,eslabon,ruido_alta_frec_angulo_deg,ruido_omega_dps,deriva_deg_por_min,angulo_final_deg
+Integración directa,1,0.00958488,0.0611212,-0.171392,-0.102115
+Integración directa,2,0.00996046,0.0591725,-0.352283,-0.172209
+Media móvil N=5 + Euler,1,0.00948345,0.0269769,-0.171875,-0.102055
+Media móvil N=5 + Euler,2,0.00995089,0.026203,-0.3522,-0.173918
+Media móvil N=21 + Euler,1,0.00933308,0.0136094,-0.170437,-0.100505
+Media móvil N=21 + Euler,2,0.009928,0.0123371,-0.350982,-0.176343

@@ -1,0 +1,7 @@
+perfil,eslabon,consigna_coincide_frac,rms_diferencia_entre_repeticiones_deg,error_estacionario_rep1_deg,error_estacionario_rep2_deg
+escalones,1,1,0.0761622,0.641042,0.614487
+escalones,2,1,0.126048,0.807124,0.900596
+seno_lento,1,1,0.126102,0.0919056,0.184532
+seno_lento,2,1,0.0689068,0.0426768,0.0199125
+seno_rapido,1,1,0.151758,0.158284,0.0182149
+seno_rapido,2,1,0.113567,0.308383,0.174976

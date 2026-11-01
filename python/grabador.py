@@ -108,6 +108,9 @@ def actualizar_manifiesto(carpeta=None):
            "ajuste": [rel(f"{p}_01") for p in C.PERFILES.values() if existe(f"{p}_01")],
            "validacion": [rel(f"{p}_02") for p in C.PERFILES.values() if existe(f"{p}_02")],
            "regla": "ajuste = repetición 01 de cada perfil; validación = repetición 02"}
+    verif = Rp.RAIZ / "datos" / "verificacion_cinematica.csv"
+    if verif.exists():
+        man["verificacion_cinematica"] = "datos/verificacion_cinematica.csv"
     (carpeta / "manifiesto.json").write_text(json.dumps(man, indent=2), encoding="utf-8")
     return man
 

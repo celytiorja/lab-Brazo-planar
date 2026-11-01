@@ -1,0 +1,19 @@
+variante_sesgo,metodo,eslabon,sesgo_usado_dps,deriva_final_deg,error_estacionario_rms_deg
+sin compensar,Integración directa,1,0,1.88635,1.17512
+sin compensar,Integración directa,2,0,-7.10344,5.74062
+sin compensar,Media móvil N=5 + Euler,1,0,1.87707,1.17156
+sin compensar,Media móvil N=5 + Euler,2,0,-7.09605,5.73485
+sin compensar,Media móvil N=21 + Euler,1,0,1.87148,1.16754
+sin compensar,Media móvil N=21 + Euler,2,0,-7.09687,5.73476
+sesgo del archivo estático,Integración directa,1,0.354955,-6.27636,4.47489
+sesgo del archivo estático,Integración directa,2,0.113479,-9.71305,2.07535
+sesgo del archivo estático,Media móvil N=5 + Euler,1,0.354955,-6.28564,4.47815
+sesgo del archivo estático,Media móvil N=5 + Euler,2,0.113479,-9.70566,2.06931
+sesgo del archivo estático,Media móvil N=21 + Euler,1,0.354955,-6.29123,4.48156
+sesgo del archivo estático,Media móvil N=21 + Euler,2,0.113479,-9.70648,2.0688
+sesgo del reposo inicial (mismo archivo),Integración directa,1,0.0808142,0.0279084,0.641042
+sesgo del reposo inicial (mismo archivo),Integración directa,2,-0.250687,-1.33853,0.807124
+sesgo del reposo inicial (mismo archivo),Media móvil N=5 + Euler,1,0.0808142,0.0186301,0.641197
+sesgo del reposo inicial (mismo archivo),Media móvil N=5 + Euler,2,-0.250687,-1.33113,0.801063
+sesgo del reposo inicial (mismo archivo),Media móvil N=21 + Euler,1,0.0808142,0.0130421,0.64095
+sesgo del reposo inicial (mismo archivo),Media móvil N=21 + Euler,2,-0.250687,-1.33195,0.79952

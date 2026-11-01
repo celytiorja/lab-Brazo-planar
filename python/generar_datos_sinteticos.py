@@ -128,6 +128,32 @@ def simular(nombre, perfil, duracion_s, rng, carpeta):
     return nombre
 
 
+# Errores que se le "esconden" a la verificación cinemática sintética, para
+# comprobar que verificacion_cinematica.py los encuentra.
+OFFSET_OCULTO_DEG = (0.8, 2.5)      # δθ1, δθ2 (montaje del servo corrido)
+SIGMA_JUEGO_DEG = 0.4               # juego de engranajes, distinto en cada medición
+SIGMA_REGLA_MM = 0.7                # error al leer la regla
+
+
+def generar_verificacion(carpeta, rng):
+    """Hoja de verificación cinemática con medidas INVENTADAS (marcadas)."""
+    import verificacion_cinematica as V
+    from cinematica import cinematica_directa
+    df = V.crear_plantilla()
+    t1 = df.theta1_deg + OFFSET_OCULTO_DEG[0] + rng.normal(0, SIGMA_JUEGO_DEG, len(df))
+    t2 = df.theta2_deg + OFFSET_OCULTO_DEG[1] + rng.normal(0, SIGMA_JUEGO_DEG, len(df))
+    (x, y), _ = cinematica_directa(t1, t2, P.L1_MM, P.L2_MM)
+    df["x_med_mm"] = np.round(x + rng.normal(0, SIGMA_REGLA_MM, len(df)), 1)
+    df["y_med_mm"] = np.round(y + rng.normal(0, SIGMA_REGLA_MM, len(df)), 1)
+    ruta = carpeta / "verificacion_cinematica.csv"
+    with open(ruta, "w", encoding="utf-8", newline="") as f:
+        f.write(f"# SINTÉTICO: medidas inventadas con offset oculto {OFFSET_OCULTO_DEG} °, "
+                f"juego σ={SIGMA_JUEGO_DEG}°, regla σ={SIGMA_REGLA_MM} mm. NO son mediciones.\n")
+        f.write(V.encabezado_calibracion())
+        df.to_csv(f, index=False)
+    return ruta
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--carpeta", default=str(RAIZ / "datos" / "sinteticos"))
@@ -140,6 +166,7 @@ def main():
     for rep in (1, 2):
         for p, nom in C.PERFILES.items():
             simular(f"{nom}_{rep:02d}", p, perfiles.duracion_total(p), rng, carpeta)
+    generar_verificacion(carpeta, rng)
 
     rel = lambda nombre: f"datos/sinteticos/{nombre}.csv"
     manifiesto = {
@@ -148,6 +175,7 @@ def main():
         "dinamico_e1": rel("escalones_01"),
         "ajuste": [rel(f"{n}_01") for n in C.PERFILES.values()],
         "validacion": [rel(f"{n}_02") for n in C.PERFILES.values()],
+        "verificacion_cinematica": "datos/sinteticos/verificacion_cinematica.csv",
     }
     (carpeta / "manifiesto.json").write_text(json.dumps(manifiesto, indent=2), encoding="utf-8")
     print(f"Datos sintéticos en {carpeta}")

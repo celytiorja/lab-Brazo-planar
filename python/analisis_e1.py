@@ -10,6 +10,11 @@ Salidas en resultados/<origen>/e1/ (todo generado por código, nada a mano):
   correlacion_cruzada.csv/.md     retrasos con relación física esperada (punto 3)
   metricas_e1.csv/.md             tabla comparativa Euler / media móvil (puntos 4 y 5)
   *.png                           gráficas (punto 5)
+  00_validacion_datos             integridad de los archivos crudos (validar_datos.py)
+  verificacion_cinematica*        punto 1, si el manifiesto trae 'verificacion_cinematica'
+  sensibilidad_ventana, variantes_sesgo, dt_real_vs_nominal, ruido_vs_deriva,
+  estructura_R, repetibilidad, degradacion_movimiento, requisitos_kalman
+                                  análisis complementarios (analisis_e1_extra.py)
 """
 import argparse
 
@@ -17,9 +22,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+import analisis_e1_extra as X
 import config_kalman as CK
 import metricas as Me
 import reporte as Rp
+import verificacion_cinematica as V
+from validar_datos import validar_manifiesto
 from datos_imu import bias_reposo, cargar, theta_de_phi
 from estimadores import IntegracionDirecta, MediaMovilIntegracion, ejecutar
 
@@ -89,6 +97,17 @@ def main():
     args = ap.parse_args()
     man = Rp.cargar_manifiesto(args.manifiesto)
     sal = Rp.carpeta_resultados(man, "e1")
+
+    # ------------------------------------------------------------------ 0. Integridad
+    val = validar_manifiesto(man, sal)
+    problemas = val[val.resultado == "FALLA"]
+    if len(problemas):
+        print("⚠️  La validación encontró FALLAS (se sigue igual; revisa 00_validacion_datos.md):")
+        print(problemas[["archivo", "chequeo", "detalle"]].to_string(index=False))
+
+    # ------------------------------------------------------------------ 1. Cinemática
+    if man.get("verificacion_cinematica"):
+        V.analizar(Rp.ruta_dato(man["verificacion_cinematica"]), sal)
 
     est = cargar(Rp.ruta_dato(man["estatico"]))
     din = cargar(Rp.ruta_dato(man["dinamico_e1"]))
@@ -223,19 +242,28 @@ def main():
     for j in (0, 1):
         lags, c, retraso, pico = Me.correlacion_cruzada(theta_cmd[mov, j], directa[mov, j], fs_d)
         filas_xc.append({"par": f"consigna θ{j+1} → θ{j+1} medido (integración)",
-                         "relacion_fisica": "el eslabón sigue a la consigna del servo",
+                         "tipo": "físico",
+                         "relacion_fisica": "el eslabón sigue a la consigna del servo "
+                                            "(respuesta mecánica del servo)",
                          "retraso_ms": retraso * 1e3, "coef_pico": pico})
         curvas.append((f"consigna θ{j+1} vs θ{j+1}", lags, c, retraso))
     m_h = tramo_solo_hombro(din)
     if m_h.sum() > 100 and din.w[m_h, 0].std() > 1.0:
         lags, c, retraso, pico = Me.correlacion_cruzada(din.w[m_h, 0], din.w[m_h, 1], fs_d, 0.1)
         filas_xc.append({"par": "w1 (IMU1) → w2 (IMU2), codo fijo",
-                         "relacion_fisica": "con el codo quieto ω2 = ω1",
+                         "tipo": "instrumental",
+                         "relacion_fisica": "con el codo quieto ω2 = ω1: cualquier retraso es "
+                                            "de la adquisición, no del brazo",
                          "retraso_ms": retraso * 1e3, "coef_pico": pico})
         curvas.append(("w1 vs w2 (codo fijo)", lags, c, retraso))
+    filas_xc.append({"par": "lectura IMU1 → IMU2 (timestamps t2 − t1)", "tipo": "instrumental",
+                     "relacion_fisica": "las IMU se leen una tras otra por I2C",
+                     "retraso_ms": float(np.mean(din.t2_menos_t1_us)) / 1e3, "coef_pico": np.nan})
     Rp.guardar_tabla(pd.DataFrame(filas_xc), sal, "correlacion_cruzada", "Correlación cruzada",
                      "Retraso positivo = la segunda señal llega después. Pico refinado con parábola "
-                     "(resolución menor a 1 muestra = 10 ms).")
+                     "(la resolución bruta es 1 muestra = 10 ms). INSTRUMENTAL = lo introduce la "
+                     "adquisición (lectura secuencial de las IMU, cuantización del muestreo); "
+                     "FÍSICO = lo introduce el mecanismo (el servo tarda en seguir la consigna).")
     fig, axs = plt.subplots(1, len(curvas), figsize=(4.2 * len(curvas), 3.5))
     for ax, (tit, lags, c, retraso) in zip(np.atleast_1d(axs), curvas):
         ax.plot(lags * 1e3, c)
@@ -274,6 +302,18 @@ def main():
     Rp.guardar_tabla(pd.DataFrame(filas), sal, "metricas_e1", "Métricas Entrega 1", nota)
     Rp.guardar_json({"deriva_reposo_fuera_de_muestra": deriva_reposo,
                      "bias_dinamico_dps": b.tolist()}, sal, "resumen_e1")
+
+    # ------------------------------------------------------------------ Complementarios
+    sens = X.sensibilidad_ventana(est, din, b_ent, sal, sint)
+    X.variantes_sesgo(est, din, sal)
+    X.dt_real_vs_nominal([est, din], sal)
+    rvd = X.ruido_vs_deriva(est, sal)
+    _, estructura = X.estructura_R(est, sal, sint)
+    X.repetibilidad(man, sal)
+    dinamicos = [din] + [cargar(Rp.ruta_dato(r)) for r in man.get("ajuste", [])
+                         if r != man["dinamico_e1"]]
+    degr = X.degradacion_movimiento(dinamicos, sal)
+    X.requisitos_kalman(est, R, estructura, sens, rvd, pd.DataFrame(filas), degr, sal)
     print(f"Listo. Resultados en {sal}")
 
 

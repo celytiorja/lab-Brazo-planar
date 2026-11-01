@@ -72,3 +72,65 @@ def test_linea_del_firmware_y_conversion_iguales_al_analisis():
     assert w == pytest.approx(esperado)
     assert parsear_linea_datos("# cfg algo") is None
     assert parsear_linea_datos("D,1,2,3") is None
+
+
+# ---------------------------------------------------------------- Entrega 1: verificación y datos
+def _captura_sana(carpeta, n=3200, modo="estatico"):
+    """Escribe un CSV crudo mínimo y correcto (más su JSON) para las pruebas."""
+    import json
+    rng = np.random.default_rng(1)
+    df = pd.DataFrame({c: rng.integers(-50, 50, n) for c in C.COLUMNAS_CRUDAS})
+    df["seq"] = np.arange(n)
+    df["t1_us"] = 1_000_000 + np.arange(n) * 10_000
+    df["t2_us"] = df["t1_us"] + 410
+    df["perfil"], df["fase"] = 0, -1
+    ruta = carpeta / "estatico_01.csv"
+    df.to_csv(ruta, index=False)
+    ruta.with_suffix(".json").write_text(json.dumps({"modo": modo}), encoding="utf-8")
+    return ruta, df
+
+
+def test_validacion_acepta_captura_sana(tmp_path):
+    from validar_datos import validar_archivo
+    ruta, _ = _captura_sana(tmp_path)
+    filas = validar_archivo(ruta)
+    assert all(f["resultado"] == "OK" for f in filas), [f for f in filas if f["resultado"] != "OK"]
+
+
+def test_validacion_detecta_problemas(tmp_path):
+    from validar_datos import validar_archivo
+    ruta, df = _captura_sana(tmp_path, n=2000)            # 20 s: reposo demasiado corto
+    df = df.drop(index=[100, 101]).reset_index(drop=True)  # muestras perdidas
+    df["gz1"] = 7                                          # IMU congelada
+    df.loc[50, "gx2"] = 32767                              # saturación
+    df.to_csv(ruta, index=False)
+    malos = {f["chequeo"].split(" ")[0] for f in validar_archivo(ruta) if f["resultado"] != "OK"}
+    assert {"reposo", "muestras", "ninguna", "sin"} <= malos
+
+
+def test_desborde_de_micros_no_es_error(tmp_path):
+    from validar_datos import validar_archivo
+    ruta, df = _captura_sana(tmp_path)
+    df["t1_us"] = (2**32 - 50_000 + np.arange(len(df)) * 10_000) % 2**32
+    df["t2_us"] = (df["t1_us"] + 410) % 2**32
+    df.to_csv(ruta, index=False)
+    f = {x["chequeo"]: x["resultado"] for x in validar_archivo(ruta)}
+    assert f["timestamps monótonos (con desborde de micros)"] == "OK"
+
+
+def test_verificacion_cinematica_encuentra_offset(tmp_path):
+    import parametros as P
+    import verificacion_cinematica as V
+    from cinematica import cinematica_directa
+    df = V.crear_plantilla()
+    assert set(df.tipo) == {"directa", "inversa"} and (df.groupby("id").size() == 2).all()
+    (x, y), _ = cinematica_directa(df.theta1_deg + 1.0, df.theta2_deg - 2.0, P.L1_MM, P.L2_MM)
+    df["x_med_mm"], df["y_med_mm"] = x, y
+    ruta = tmp_path / "v.csv"
+    df.to_csv(ruta, index=False)
+    r = V.analizar(ruta, tmp_path, sintetico=True)
+    f = r["fuentes"]
+    assert f["offset_estimado_theta1_deg"] == pytest.approx(1.0, abs=1e-3)
+    assert f["offset_estimado_theta2_deg"] == pytest.approx(-2.0, abs=1e-3)
+    assert f["rmse_corrigiendo_offsets_mm"] < 1e-3
+    assert f["repetibilidad_media_mm"] == pytest.approx(0.0, abs=1e-9)

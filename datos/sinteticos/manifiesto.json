@@ -11,5 +11,6 @@
     "datos/sinteticos/escalones_02.csv",
     "datos/sinteticos/seno_lento_02.csv",
     "datos/sinteticos/seno_rapido_02.csv"
-  ]
+  ],
+  "verificacion_cinematica": "datos/sinteticos/verificacion_cinematica.csv"
 }

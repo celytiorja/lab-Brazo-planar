@@ -11,4 +11,4 @@
 
 ruido_omega_reposo: σ de la velocidad estimada con el brazo quieto (archivo estático). deriva_reposo_30s: ángulo acumulado tras 30 s quieto (debería ser 0). retraso_vs_directa: correlación cruzada contra la integración directa (que no filtra). error_estacionario: contra la consigna SOLO donde lleva ≥0.5 s constante (servo ya llegó). deriva_final_perfil: el perfil vuelve a la pose inicial; lo que no vuelva es deriva.
 
-Generado por código · commit 379fa91+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json
+Generado por código · commit 103dfa9+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json

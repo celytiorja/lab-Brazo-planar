@@ -16,6 +16,7 @@ docs/
   03_interfaz.md                 ← cómo funciona la interfaz y la calibración
   04_captura_y_entregas.md       ← capturar datos reales y generar E1 y E2
   SUSTENTACION.md                ← qué mostrar y qué decir
+  ENTREGAS.md                    ← localizadores E1–E9 y respuestas de comprobación individual
 firmware/
   prueba_servos/                 ← sketch para probar solo los dos servos
   prueba_hardware/               ← sketch para probar servos + IMU juntos
@@ -29,9 +30,13 @@ python/
   interfaz.py                    ← interfaz gráfica que mueve el brazo real (sin IMU)
   interfaz_imu.py                ← interfaz con las IMU en vivo, grabación y teleoperación
   analisis_e1.py / analisis_e2.py← resultados de la Entrega 1 y 2 (Kalman)
+  analisis_e1_extra.py           ← sensibilidad, sesgo, Δt, estructura de R, repetibilidad...
+  verificacion_cinematica.py     ← punto 1: error del brazo real medido en papel
+  validar_datos.py               ← integridad automática de las capturas crudas
   kalman.py, modelo_kalman.py    ← filtro de Kalman y modelo del brazo
   estimadores.py, metricas.py    ← directa / media móvil / Kalman y métricas
   test_*.py                      ← pruebas automáticas
+datos/DICCIONARIO.md             ← columnas, unidades, sensor, eje y articulación
 datos/sinteticos/                ← datos de PRUEBA (no son mediciones)
 datos/crudos/                    ← capturas reales (las crea interfaz_imu.py)
 resultados/<origen>/e1, e2/      ← gráficas y tablas generadas por código
@@ -75,4 +80,4 @@ ejecutar `activate`, ejecuta una vez
 | Análisis E1 (estadística, R, Δt, correlación cruzada, Euler + media móvil, métricas) | ✅ probado con datos sintéticos |
 | Análisis E2 (Kalman, 3 Q, ajuste/validación, NIS, P, K, Q/R, aceleración angular) | ✅ probado con datos sintéticos |
 | Capturas reales y resultados reales | ⏳ ver `docs/04_captura_y_entregas.md` |
-| Verificación de la cinemática con medidas en papel | ⏳ |
+| Verificación de la cinemática con medidas en papel | ✅ código (`verificacion_cinematica.py`); ⏳ medir en el brazo real |

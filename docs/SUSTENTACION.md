@@ -103,6 +103,21 @@ una referencia absoluta: el acelerómetro en un plano vertical (el código ya lo
 `PLANO_VERTICAL = True`), un encoder o la cámara. **Suavizar no es lo mismo que ser más
 preciso.**
 
+## Material adicional de la Entrega 1 (añadido)
+
+- **Localizadores E1–E9 y respuestas modelo** de la comprobación individual: `docs/ENTREGAS.md`.
+- **Diccionario de datos:** `datos/DICCIONARIO.md`. Cada IMU mide respecto al **marco fijo**;
+  por eso θ2 = φ2 − φ1.
+- **Verificación cinemática:** `python python/verificacion_cinematica.py`. Da el error en mm por
+  punto, la repetibilidad y los **offsets estimados** de cada articulación
+  (`09_verificacion_cinematica.png`).
+- **Integridad de los datos:** `00_validacion_datos.md`.
+- **Sensibilidad a la ventana:** `10_sensibilidad_ventana.png`. El retraso medido sigue la recta
+  (N−1)/2 y el ruido baja como σ/√N.
+- **Estructura de R:** `estructura_R.md`. Ruido estacionario y ρ(w1, w2) ≈ 0, así que R es
+  diagonal.
+- **Requisitos para el Kalman, calculados con datos:** `requisitos_kalman.md`.
+
 ## Qué falta (decirlo)
 
 - Captura con IMU reales: el firmware está listo; faltó el montaje físico.
