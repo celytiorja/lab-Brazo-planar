@@ -15,6 +15,18 @@
   esperando su confirmación antes de seguir.
 - Idioma: español. Código y comentarios en español.
 
+## Estrategia de enseñanza (ajustar según funcione)
+
+- Funciona: analogías con su propio brazo, números de SU proyecto, tablas,
+  paso a paso, y cerrar con 1–2 preguntas cortas para que explique con sus
+  palabras (práctica de recuerdo). Practicar con las preguntas de comprobación
+  individual (sección 8 de los instrumentos; respuestas modelo en docs/ENTREGAS.md).
+- No funciona: saltar pasos o dar por sabido algo (se frustra con razón).
+- Registro de comprensión (actualizar con sus respuestas):
+  - 2026-11-01: se explicó el panorama (medir→estimar→actuar, por qué IMU si el
+    servo tiene control, ruido/deriva/retraso, E1 vs E2). Pendiente su respuesta a
+    "¿consigna = medición?" y "¿por qué la media móvil no corrige la deriva?".
+
 ## Entorno del usuario
 
 - Windows 11, VS Code, Python 3.12. Arduino IDE para el ESP32.
