@@ -22,6 +22,7 @@ Uso típico:
 """
 import sys
 import time
+import traceback
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -57,6 +58,8 @@ class InterfazIMU:
         self.ultimo_envio = None
         self.t_ultimo_envio = 0.0
         self.mensajes = []
+        self.n_lineas = 0          # todo lo que llega por el puerto
+        self.n_datos = 0           # solo las líneas de datos "D,..." válidas
 
         self.fig = plt.figure(figsize=(16, 9))
         self.fig.canvas.manager.set_window_title("Brazo planar 2 GDL - IMU en vivo")
@@ -94,7 +97,7 @@ class InterfazIMU:
         self.ax_w.grid(alpha=0.3)
         self.ax_w.legend(fontsize=7, loc="upper left", ncol=2)
         self.ax_t2.set_xlabel("t [s]")
-        self.texto_estado = self.fig.text(x0, 0.015, "", family="monospace", fontsize=8.5,
+        self.texto_estado = self.fig.text(x0, 0.01, "", family="monospace", fontsize=8.5,
                                           va="bottom")
 
         # ---------------- Derecha: controles ----------------
@@ -126,7 +129,8 @@ class InterfazIMU:
         self.radio_q = RadioButtons(self.fig.add_axes([xc, 0.305, wc, 0.105]), nombres_q,
                                     active=nombres_q.index(self.proc.config_q["nombre"]))
         self.radio_q.on_clicked(self.al_cambiar_q)
-        self.texto_msg = self.fig.text(xc, 0.29, "", family="monospace", fontsize=7.5, va="top")
+        self.texto_msg = self.fig.text(xc, 0.29, "", family="monospace", fontsize=8.5, va="top",
+                                       color="tab:blue")
 
         self.reloj = self.fig.canvas.new_timer(interval=PERIODO_MS)
         self.reloj.add_callback(self.cada_periodo)
@@ -160,8 +164,12 @@ class InterfazIMU:
         self.anotar(f"Conectado a {puerto}. Esperando reinicio del ESP32...")
 
     def al_calibrar(self, _):
-        if not self.transmitiendo:
-            self.anotar("Primero conecta.")
+        if not self.conexion.conectado:
+            self.anotar("No estás conectado: pulsa 'Conectar' primero.")
+            return
+        if not self.transmitiendo or self.n_datos == 0:
+            self.anotar("Conectado, pero aún no llegan datos de las IMU. Espera unos "
+                        "segundos; si sigue igual, copia lo que dice la terminal.")
             return
         self.proc.empezar_calibracion()
         self.anotar("Calibrando: NO muevas el brazo 3 s...")
@@ -199,17 +207,24 @@ class InterfazIMU:
 
     # ================= Bucle =================
     def cada_periodo(self):
-        if self.conexion.conectado:
-            try:
-                self._leer()
-                self._enviar_ordenes()
-            except (SerialException, OSError) as e:
-                self._detener_grabacion("conexión perdida")
-                self.conexion.desconectar()
-                self.transmitiendo = False
-                self.boton_conectar.label.set_text("Conectar")
-                self.anotar(f"Conexión perdida: {e}")
-        self._dibujar()
+        # Todo va dentro de try: si algo falla, se muestra el error y el reloj
+        # SIGUE funcionando (si no, la ventana se "congela" sin avisar).
+        try:
+            if self.conexion.conectado:
+                try:
+                    self._leer()
+                    self._enviar_ordenes()
+                except (SerialException, OSError) as e:
+                    self._detener_grabacion("conexión perdida")
+                    self.conexion.desconectar()
+                    self.transmitiendo = False
+                    self.boton_conectar.label.set_text("Conectar")
+                    self.anotar(f"Conexión perdida: {e}")
+            self._dibujar()
+        except Exception as e:
+            traceback.print_exc()
+            self.anotar(f"ERROR interno: {type(e).__name__}: {e}")
+            self.fig.canvas.draw_idle()
 
     def _leer(self):
         if not self.transmitiendo and self.conexion.listo:
@@ -219,12 +234,18 @@ class InterfazIMU:
             self.anotar("Recibiendo datos. Brazo quieto y pulsa 'Calibrar sesgo'.")
         estaba_calibrando = self.proc.calibrando
         for linea in self.conexion.leer_lineas():
+            self.n_lineas += 1
             if linea.startswith("#"):
                 self._mensaje_firmware(linea)
                 continue
             v = parsear_linea_datos(linea)
             if v is None:
+                if self.n_lineas <= 5:
+                    self.anotar(f"Línea no reconocida: {linea[:40]!r}")
                 continue
+            self.n_datos += 1
+            if self.n_datos == 1:
+                self.anotar("Llegó la primera muestra de las IMU.")
             if self.grabacion is not None:
                 # En un perfil solo se guardan sus muestras (no las de antes de empezar).
                 if self.grabacion_perfil <= 0 or v[3] == self.grabacion_perfil:
@@ -248,6 +269,8 @@ class InterfazIMU:
             self.conexion.enviar("s 1")       # el firmware deja de transmitir al terminar
         elif linea.startswith("# error_i2c"):
             self.anotar(linea[2:])
+        else:
+            self.anotar(f"ESP32: {linea[2:60]}")
 
     def _enviar_ordenes(self):
         if not self.conexion.listo or self.perfil_activo:
@@ -290,8 +313,10 @@ class InterfazIMU:
                     else "Grabación vacía: no se guardó")
 
     def anotar(self, texto):
+        print(f"[interfaz] {texto}", flush=True)     # también en la terminal
         self.mensajes = (self.mensajes + [texto])[-9:]
-        self.texto_msg.set_text("\n".join(f"· {m[:46]}" for m in self.mensajes))
+        self.texto_msg.set_text("\n".join(f"· {m[:42]}" for m in self.mensajes))
+        self.fig.canvas.draw_idle()
 
     def _dibujar(self):
         h = self.proc.hist
@@ -322,7 +347,14 @@ class InterfazIMU:
         b = self.proc.bias
         estado = "CALIBRANDO..." if self.proc.calibrando else \
             (f"sesgo = [{b[0]:+.3f}, {b[1]:+.3f}] °/s" if self.proc.calibrado else "SIN CALIBRAR")
+        if not self.conexion.conectado:
+            conexion = "DESCONECTADO"
+        elif not self.conexion.listo:
+            conexion = "conectando..."
+        else:
+            conexion = f"recibidas {self.n_lineas} líneas ({self.n_datos} de datos)"
         self.texto_estado.set_text(
+            f"{conexion}\n"
             f"fs real {e['fs']:6.2f} Hz  jitter {e['jitter_us']:5.0f} µs  perdidas {e['perdidas']}"
             f"  |  Kalman {e['t_kalman_us']:5.0f} µs/muestra (máx {e['t_kalman_max_us']:4.0f})\n"
             f"{estado}  |  R: {self.proc.origen_R}  |  {self.proc.config_q['nombre']} "
