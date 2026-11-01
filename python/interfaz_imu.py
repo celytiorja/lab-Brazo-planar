@@ -30,6 +30,8 @@ from matplotlib.widgets import Button, RadioButtons, TextBox
 from serial import SerialException
 
 import config_imu as C
+import parametros as P
+from blit import Blitter
 from cinematica import cinematica_directa
 from conexion import ConexionESP32, detectar_puerto, puertos_disponibles
 from grabador import Grabacion, parsear_linea_datos
@@ -37,7 +39,10 @@ from servos import modelo_a_servo, servo_a_modelo
 from simulador import L1, L2, VistaBrazo
 from tiempo_real import HISTORIA_S, ProcesadorTiempoReal
 
-PERIODO_MS = 50                 # refresco de pantalla (20 por segundo)
+PERIODO_MS = 40                 # leer el puerto y enviar órdenes: 25 veces por segundo
+DIBUJAR_CADA = 2                # dibujar 1 de cada 2 ciclos (12.5 cuadros/s: fluido al ojo)
+PASO_GRAFICA = 3                # en las gráficas se dibuja 1 de cada 3 muestras
+PERIODO_ESCALAS_S = 1.0         # cada cuánto se revisa si hay que cambiar la escala
 PERIODO_ORDENES_S = 0.05        # máximo 20 órdenes por segundo a los servos
 DURACION_REPOSO_S = 40.0        # la guía pide al menos 30 s
 FUENTES = ("Sliders (consigna)", "Integración directa", "Media móvil", "Kalman")
@@ -58,6 +63,7 @@ class InterfazIMU:
         self.ultimo_envio = None
         self.t_ultimo_envio = 0.0
         self.mensajes = []
+        self._ciclo = 0
         self.n_lineas = 0          # todo lo que llega por el puerto
         self.n_datos = 0           # solo las líneas de datos "D,..." válidas
 
@@ -65,9 +71,12 @@ class InterfazIMU:
         self.fig.canvas.manager.set_window_title("Brazo planar 2 GDL - IMU en vivo")
 
         # ---------------- Izquierda: brazo ----------------
+        # redibujar=False: el brazo y los sliders se pintan con blitting (rápido).
         self.vista = VistaBrazo(self.fig, izquierda=0.0, ancho=0.40,
                                 theta_inicial=servo_a_modelo(90, 90),
-                                al_mover=self.al_mover_sliders)
+                                al_mover=self.al_mover_sliders, redibujar=False)
+        for s in (self.vista.s1, self.vista.s2):
+            s.drawon = False                 # el slider no pide redibujar TODA la figura
         ax = self.vista.ax
         self.brazos = {k: ax.plot([], [], "-o", lw=2.5, ms=4, color=COLOR[k], alpha=0.85)[0]
                        for k in ("dir", "mm", "kf")}
@@ -96,7 +105,14 @@ class InterfazIMU:
         self.ax_w.set_ylabel("ω [°/s]")
         self.ax_w.grid(alpha=0.3)
         self.ax_w.legend(fontsize=7, loc="upper left", ncol=2)
-        self.ax_t2.set_xlabel("t [s]")
+        # Eje de tiempo FIJO ("hace cuántos segundos"): así no hay que redibujar los
+        # números del eje en cada cuadro; solo se mueven las líneas.
+        self.ax_w.set_xlim(-HISTORIA_S, 0)
+        self.ax_t2.set_xlabel("segundos atrás  (0 = ahora)")
+        self.ax_w.set_ylim(-60, 60)
+        self.ax_t1.set_ylim(P.THETA1_MIN - 10, P.THETA1_MAX + 10)
+        self.ax_t2.set_ylim(P.THETA2_MIN - 10, P.THETA2_MAX + 10)
+        self._t_escalas = 0.0
         self.texto_estado = self.fig.text(x0, 0.01, "", family="monospace", fontsize=8.5,
                                           va="bottom")
 
@@ -132,6 +148,11 @@ class InterfazIMU:
         self.texto_msg = self.fig.text(xc, 0.29, "", family="monospace", fontsize=8.5, va="top",
                                        color="tab:blue")
 
+        # Todo lo que cambia en cada cuadro se dibuja con blitting.
+        self.blit = Blitter(self.fig.canvas, list(self.lineas.values()) +
+                            list(self.brazos.values()) + self.vista.artistas_dinamicos() +
+                            [self.texto_estado, self.texto_msg])
+
         self.reloj = self.fig.canvas.new_timer(interval=PERIODO_MS)
         self.reloj.add_callback(self.cada_periodo)
         self.reloj.start()
@@ -147,7 +168,7 @@ class InterfazIMU:
             self._detener_grabacion("desconectado")
             self.conexion.desconectar()
             self.transmitiendo = False
-            self.boton_conectar.label.set_text("Conectar")
+            self._texto_boton_conectar("Conectar")
             self.anotar("Desconectado.")
             return
         puerto = self.caja_puerto.text.strip()
@@ -160,7 +181,7 @@ class InterfazIMU:
         except SerialException as e:
             self.anotar(f"No se pudo abrir {puerto}. ¿Monitor Serie abierto? {e}")
             return
-        self.boton_conectar.label.set_text("Desconectar")
+        self._texto_boton_conectar("Desconectar")
         self.anotar(f"Conectado a {puerto}. Esperando reinicio del ESP32...")
 
     def al_calibrar(self, _):
@@ -218,9 +239,13 @@ class InterfazIMU:
                     self._detener_grabacion("conexión perdida")
                     self.conexion.desconectar()
                     self.transmitiendo = False
-                    self.boton_conectar.label.set_text("Conectar")
+                    self._texto_boton_conectar("Conectar")
                     self.anotar(f"Conexión perdida: {e}")
-            self._dibujar()
+            # Leer y enviar en CADA ciclo (la teleoperación no espera al dibujo);
+            # dibujar solo en algunos: dibujar es lo más caro.
+            self._ciclo += 1
+            if self._ciclo % DIBUJAR_CADA == 0:
+                self._dibujar()
         except Exception as e:
             traceback.print_exc()
             self.anotar(f"ERROR interno: {type(e).__name__}: {e}")
@@ -312,27 +337,27 @@ class InterfazIMU:
         self.anotar(f"Guardado {ruta.name} ({g.muestras} muestras)" if ruta
                     else "Grabación vacía: no se guardó")
 
+    def _texto_boton_conectar(self, texto):
+        self.boton_conectar.label.set_text(texto)
+        self.fig.canvas.draw_idle()   # el botón no es animado: pasa poco, se redibuja todo
+
     def anotar(self, texto):
         print(f"[interfaz] {texto}", flush=True)     # también en la terminal
         self.mensajes = (self.mensajes + [texto])[-9:]
         self.texto_msg.set_text("\n".join(f"· {m[:42]}" for m in self.mensajes))
-        self.fig.canvas.draw_idle()
 
     def _dibujar(self):
         h = self.proc.hist
         if h["t"]:
             t = np.array(h["t"])
+            t = t[::-1][::PASO_GRAFICA][::-1]          # 1 de cada PASO, terminando en "ahora"
+            t_rel = t - t[-1]
+            datos = {k: np.array(h[k])[::-1][::PASO_GRAFICA][::-1] for k in self.lineas}
             for k, linea in self.lineas.items():
-                linea.set_data(t, np.array(h[k]))
-            t_fin = t[-1]
-            self.ax_w.set_xlim(max(0, t_fin - HISTORIA_S), max(HISTORIA_S, t_fin))
-            for axj, claves in ((self.ax_w, ("w1", "w2", "wk1", "wk2")),
-                                (self.ax_t1, ("cmd1", "dir1", "mm1", "kf1")),
-                                (self.ax_t2, ("cmd2", "dir2", "mm2", "kf2"))):
-                y = np.concatenate([np.array(h[k]) for k in claves])
-                lo, hi = np.nanmin(y), np.nanmax(y)
-                margen = max(2.0, 0.1 * (hi - lo))
-                axj.set_ylim(lo - margen, hi + margen)
+                linea.set_data(t_rel, datos[k])
+            if time.monotonic() - self._t_escalas > PERIODO_ESCALAS_S:
+                self._t_escalas = time.monotonic()
+                self._ajustar_escalas(datos)
             u = self.proc.ultimo
             for clave in ("dir", "mm", "kf"):
                 (x, y), (xc, yc) = cinematica_directa(*u[clave], L1, L2)
@@ -359,7 +384,29 @@ class InterfazIMU:
             f"  |  Kalman {e['t_kalman_us']:5.0f} µs/muestra (máx {e['t_kalman_max_us']:4.0f})\n"
             f"{estado}  |  R: {self.proc.origen_R}  |  {self.proc.config_q['nombre']} "
             f"q={self.proc.config_q['q']:.3g}{grab}")
-        self.fig.canvas.draw_idle()
+        self.blit.actualizar()
+
+    def _ajustar_escalas(self, datos):
+        """Cambia la escala vertical SOLO si los datos se salen o quedan muy chicos.
+        Cambiar la escala obliga a redibujar todo (lento), por eso se hace poco."""
+        cambio = False
+        for axj, claves, minimo in ((self.ax_w, ("w1", "w2", "wk1", "wk2"), 20.0),
+                                    (self.ax_t1, ("cmd1", "dir1", "mm1", "kf1"), 10.0),
+                                    (self.ax_t2, ("cmd2", "dir2", "mm2", "kf2"), 10.0)):
+            y = np.concatenate([datos[k] for k in claves])
+            y = y[np.isfinite(y)]
+            if len(y) == 0:
+                continue
+            lo, hi = float(y.min()), float(y.max())
+            centro, mitad = (lo + hi) / 2, max(minimo, hi - lo) / 2
+            a, b = axj.get_ylim()
+            se_sale = lo < a or hi > b
+            muy_grande = (b - a) > 4 * (2 * mitad * 1.2)
+            if se_sale or muy_grande:
+                axj.set_ylim(centro - 1.2 * mitad, centro + 1.2 * mitad)
+                cambio = True
+        if cambio:
+            self.fig.canvas.draw_idle()       # redibujo completo -> el blitter guarda el nuevo fondo
 
 
 if __name__ == "__main__":

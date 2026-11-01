@@ -41,12 +41,15 @@ class VistaBrazo:
 
     izquierda, ancho: franja horizontal de la figura que ocupa (fracción 0..1).
     al_mover(θ1, θ2): función opcional que se llama cada vez que el brazo cambia.
+    redibujar: False si otro se encarga de refrescar la pantalla (la interfaz con
+               IMU usa "blitting" y no quiere redibujos completos, que son lentos).
     """
 
     def __init__(self, fig, izquierda=0.0, ancho=1.0, theta_inicial=(30, 45),
-                 al_mover=None):
+                 al_mover=None, redibujar=True):
         self.fig = fig
         self.al_mover = al_mover
+        self.redibujar = redibujar
         self.historial = []
 
         def caja(u, y, du, dy):   # u, du: posición relativa dentro de la franja
@@ -87,6 +90,19 @@ class VistaBrazo:
         fig.canvas.mpl_connect("button_press_event", self.al_hacer_clic)
         self.dibujar()
 
+    def _pedir_dibujo(self):
+        if self.redibujar:
+            self.fig.canvas.draw_idle()
+
+    def artistas_dinamicos(self):
+        """Lo que cambia al mover el brazo (para dibujarlo con blitting)."""
+        arts = [self.linea_espejo, self.linea_fantasma, self.linea_brazo, self.rastro,
+                self.texto, self.aviso]
+        for s in (self.s1, self.s2):
+            arts += [a for a in (getattr(s, "poly", None), getattr(s, "_handle", None),
+                                 getattr(s, "valtext", None)) if a is not None]
+        return arts
+
     @property
     def theta(self):
         return self.s1.val, self.s2.val
@@ -125,18 +141,18 @@ class VistaBrazo:
             self.radio.eventson = True
         if self.al_mover is not None:
             self.al_mover(t1, t2)
-        self.fig.canvas.draw_idle()
+        self._pedir_dibujo()
 
     def ir_a_punto(self, x, y, codo):
         if not alcanzable(x, y, L1, L2):
             self.aviso.set_text("Punto fuera de alcance (fuera del anillo gris)")
-            self.fig.canvas.draw_idle()
+            self._pedir_dibujo()
             return
         t1, t2 = resolver(x, y, codo)
         if not dentro_de_limites(t1, t2):
             self.aviso.set_text(f"Codo {codo}: necesitaría θ1={t1:.0f}°, θ2={t2:.0f}°, "
                                 f"fuera de los límites de los servos")
-            self.fig.canvas.draw_idle()
+            self._pedir_dibujo()
             return
         self.aviso.set_text("")
         self.mover_a(t1, t2)
