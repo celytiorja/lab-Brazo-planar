@@ -16,7 +16,10 @@ Flujo (sin editar nada a mano):
 import argparse
 import json
 
-import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("Agg")   # solo genera archivos: no abre ventanas
+import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2

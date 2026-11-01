@@ -16,7 +16,10 @@ Cada punto se mide 2 veces (columna `repeticion`) para ver la REPETIBILIDAD.
 import argparse
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("Agg")   # solo genera archivos: no abre ventanas
+import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 import pandas as pd
 from matplotlib.patches import Circle

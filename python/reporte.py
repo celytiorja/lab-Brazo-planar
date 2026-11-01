@@ -3,11 +3,11 @@ import json
 import subprocess
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use("Agg")   # genera archivos sin abrir ventanas
-import matplotlib.pyplot as plt  # noqa: E402
-import pandas as pd  # noqa: E402
+# OJO: aquí NO se elige el "backend" de matplotlib. Si este módulo pusiera
+# matplotlib.use("Agg"), cualquier programa que lo importe (p. ej. la interfaz)
+# dejaría de abrir ventanas. Los scripts de análisis lo eligen ellos mismos.
+import matplotlib.pyplot as plt
+import pandas as pd
 
 RAIZ = Path(__file__).resolve().parent.parent
 

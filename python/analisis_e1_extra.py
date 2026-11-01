@@ -12,7 +12,10 @@ Cada función responde UNA pregunta de la guía y guarda su tabla/gráfica:
 """
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("Agg")   # solo genera archivos: no abre ventanas
+import matplotlib.pyplot as plt  # noqa: E402
 from scipy.signal import savgol_filter
 from scipy.stats import levene
 

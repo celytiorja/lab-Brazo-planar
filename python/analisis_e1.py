@@ -18,7 +18,10 @@ Salidas en resultados/<origen>/e1/ (todo generado por código, nada a mano):
 """
 import argparse
 
-import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("Agg")   # solo genera archivos: no abre ventanas
+import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 import pandas as pd
 
