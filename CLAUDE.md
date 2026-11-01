@@ -68,6 +68,12 @@
   `analisis_e1.py` / `analisis_e2.py`. Guía: docs/04_captura_y_entregas.md.
   Probado con un ESP32 simulado; el .ino NUNCA se ha compilado (no hay
   arduino-cli aquí): si da error, corregir con lo que pegue el usuario.
+- ✅ 2026-11-01: `adquisicion.ino` compila y corre (ojo: la placa elegida en el
+  IDE era "ESP32 Wrover Module"; sugerido "ESP32 Dev Module"). Ambas MPU
+  responden (problema era AD0 de las dos sin conectar → misma dirección 0x68).
+  `interfaz_imu.py COM3` conecta y grafica en Windows (hubo que quitar
+  matplotlib.use("Agg") de reporte.py). Siguiente: pegar las IMU en los
+  eslabones (no hace falta el eje), verificar signo del giro, capturar.
 - Datos sintéticos en datos/sinteticos (siempre marcados; nunca presentarlos
   como reales). Resultados de prueba en resultados/sinteticos.
 - Pendiente: capturas reales, verificación de cinemática en papel milimetrado
