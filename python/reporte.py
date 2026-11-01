@@ -24,7 +24,7 @@ def cargar_manifiesto(ruta=None):
     if not ruta.exists():
         raise SystemExit(
             f"No existe {ruta}.\n"
-            "  - Con datos reales: captúralos con python/captura.py y crea ese manifiesto.\n"
+            "  - Con datos reales: grábalos con  python python/interfaz_imu.py  (crea el manifiesto solo).\n"
             "  - Para probar el código: python python/generar_datos_sinteticos.py y luego\n"
             "    agrega  --manifiesto datos/sinteticos/manifiesto.json")
     m = json.loads(ruta.read_text(encoding="utf-8"))

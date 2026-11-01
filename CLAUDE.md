@@ -40,40 +40,26 @@
   correlación cruzada, integración de Euler con media móvil (≥2 ventanas),
   gráficas + tabla de métricas. Brazo movido desde interfaz gráfica en PC.
 
-## Estado al cierre de la sesión del 2026-10-26 (retomar desde aquí)
+## Estado (2026-11-01)
 
-Hecho y funcionando:
-- Git: instaló Git 2.56, clonó, sabe `status`, `log --oneline`, `diff`, `pull`,
-  `add`, `commit`, `push`. Primer commit propio: `2f1a9a7` (L1=105 mm, L2=85 mm),
-  autor "Cely". Ya inició sesión en GitHub desde Windows. Conoce el visor `less`
-  (salir con `q`); se le sugirió `git config --global core.pager ""` (opcional).
-- Python: `.venv` creado, dependencias instaladas, 11 pruebas pasan, usó el simulador.
-- Brazo montado (sin IMU). Servos validados. Interfaz conecta y mueve el brazo real.
-- Calibración: el codo giraba al revés → el usuario cambió `CODO_SIGNO` a −1 en
-  su PC y funcionó. ⚠️ Ese cambio está GUARDADO en su disco pero quizá NO
-  commiteado: lo primero mañana es que él haga `git status` y, si sale
-  `modified: python/parametros.py`, el ciclo add → commit → push. No editar
-  `parametros.py` desde aquí hasta que lo suba (evitar conflictos).
-- Aprendió a depurar siguiendo la cadena dibujo → texto "Servos" → respuesta
-  del ESP32 → servo físico, y que Python no se compila pero hay que reiniciar
-  el programa para que lea cambios. Lección: guardar (Ctrl+S / Auto Save).
-
-Pendiente (en este orden):
-1. Commit del `CODO_SIGNO = -1` (lo hace él).
-2. Terminar calibración: medir `CODO_OFFSET` real (valor de `c` con brazo recto),
-   verificar `HOMBRO_OFFSET`/`HOMBRO_SIGNO` (θ1=0 → eslabón 1 hacia +x;
-   "Ir a posición de inicio" debe dejar el brazo recto hacia +y). Cambiar el
-   comentario "PROVISIONALES" de L1/L2 en `parametros.py`.
-3. Punto 1 de la entrega: tabla de posiciones de referencia (θ teórico vs punta
-   medida en papel milimetrado), error por punto, RMSE y error máximo; explicar
-   causas (offset, signo, backlash, resolución 1°, flexión). Ya se le explicó con
-   números que un offset del hombro NO rompe la coincidencia codo arriba/abajo y
-   uno del codo SÍ.
-4. Conectar las IMU (AD0 de IMU2 a 3.3 V) y probar con `firmware/prueba_hardware`.
-5. Firmware de adquisición (timestamp µs, ~100 Hz, CSV) + captura en la interfaz;
-   luego puntos 2–5 de la entrega (estadística, matriz R, correlación cruzada,
-   Euler + media móvil, gráficas y tabla).
-- Sigue pendiente que diga la corriente a 5 V de la etiqueta del cargador.
+- Git: sabe status/log/diff/pull/add/commit/push. Primer commit propio `2f1a9a7`.
+- Calibración: el usuario cambió `CODO_SIGNO` a −1 en su PC y funciona, pero
+  NUNCA lo subió (al 2026-11-01 sigue sin estar en GitHub). No editar
+  `parametros.py` desde aquí hasta que lo suba; recordarle add → commit → push.
+- Ya sustentó una vez SIN IMU (con datos sintéticos, declarados como tales).
+- Ya tiene las MPU. Pines: docs/02_conexiones.md. Pendiente que diga qué eje del
+  giro cambia al girar (para `EJE_GIRO` en `python/config_imu.py`, hoy gz, +1) y
+  si el brazo se mueve en plano vertical u horizontal (`PLANO_VERTICAL`).
+- Código final: `firmware/adquisicion` (460800 baud) + `python/interfaz_imu.py`
+  (IMU en vivo, calibrar sesgo, grabar reposo/perfiles en datos/crudos con
+  manifiesto automático, teleoperación con directa/MM/Kalman) +
+  `analisis_e1.py` / `analisis_e2.py`. Guía: docs/04_captura_y_entregas.md.
+  Probado con un ESP32 simulado; el .ino NUNCA se ha compilado (no hay
+  arduino-cli aquí): si da error, corregir con lo que pegue el usuario.
+- Datos sintéticos en datos/sinteticos (siempre marcados; nunca presentarlos
+  como reales). Resultados de prueba en resultados/sinteticos.
+- Pendiente: capturas reales, verificación de cinemática en papel milimetrado
+  (punto 1 E1), etiqueta del cargador (corriente a 5 V).
 
 ## Convenciones
 

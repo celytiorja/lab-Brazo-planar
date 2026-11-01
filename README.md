@@ -14,17 +14,27 @@ docs/
   01_cinematica.md               ← teoría de cinemática directa e inversa
   02_conexiones.md               ← pines, diagrama y alimentación
   03_interfaz.md                 ← cómo funciona la interfaz y la calibración
+  04_captura_y_entregas.md       ← capturar datos reales y generar E1 y E2
+  SUSTENTACION.md                ← qué mostrar y qué decir
 firmware/
   prueba_servos/                 ← sketch para probar solo los dos servos
   prueba_hardware/               ← sketch para probar servos + IMU juntos
+  adquisicion/                   ← firmware final: 2 IMU a 100 Hz + servos + perfiles
 python/
   parametros.py                  ← L1, L2 y calibración de los servos
   cinematica.py                  ← cinemática directa e inversa
   servos.py                      ← traducción θ del modelo ↔ ángulo del servo
   conexion.py                    ← comunicación serie con el ESP32
   simulador.py                   ← simulador interactivo (sin hardware)
-  interfaz.py                    ← interfaz gráfica que mueve el brazo real
+  interfaz.py                    ← interfaz gráfica que mueve el brazo real (sin IMU)
+  interfaz_imu.py                ← interfaz con las IMU en vivo, grabación y teleoperación
+  analisis_e1.py / analisis_e2.py← resultados de la Entrega 1 y 2 (Kalman)
+  kalman.py, modelo_kalman.py    ← filtro de Kalman y modelo del brazo
+  estimadores.py, metricas.py    ← directa / media móvil / Kalman y métricas
   test_*.py                      ← pruebas automáticas
+datos/sinteticos/                ← datos de PRUEBA (no son mediciones)
+datos/crudos/                    ← capturas reales (las crea interfaz_imu.py)
+resultados/<origen>/e1, e2/      ← gráficas y tablas generadas por código
 requirements.txt                 ← dependencias de Python
 ```
 
@@ -56,12 +66,13 @@ ejecutar `activate`, ejecuta una vez
    **ESP32 Dev Module** y el puerto COM, y subir.
 5. Abrir el Monitor Serie a **115200** baudios con fin de línea **Nueva línea**.
 
-## Avance de la Entrega 1
+## Avance
 
-| # | Trabajo | Estado |
-|---|---|---|
-| 1 | Cinemática directa e inversa + verificación con posiciones de referencia | 🟡 Teoría, código y pruebas listos; falta medir el brazo real |
-| 2 | Captura ≥30 s en reposo + movimiento dinámico repetible (ambas IMU) | ⚪ Pendiente (firmware de adquisición + interfaz) |
-| 3 | Media, varianza, matriz R, alineación temporal, correlación cruzada | ⚪ Pendiente |
-| 4 | Integración de Euler + media móvil (≥2 ventanas) | ⚪ Pendiente |
-| 5 | Gráficas + tabla de métricas (ruido, deriva, retraso) | ⚪ Pendiente |
+| Trabajo | Estado |
+|---|---|
+| Cinemática directa/inversa, simulador, brazo real con interfaz | ✅ |
+| Firmware de adquisición + interfaz con IMU en vivo y grabación | ✅ código y pruebas con ESP32 simulado; falta probar con las IMU reales |
+| Análisis E1 (estadística, R, Δt, correlación cruzada, Euler + media móvil, métricas) | ✅ probado con datos sintéticos |
+| Análisis E2 (Kalman, 3 Q, ajuste/validación, NIS, P, K, Q/R, aceleración angular) | ✅ probado con datos sintéticos |
+| Capturas reales y resultados reales | ⏳ ver `docs/04_captura_y_entregas.md` |
+| Verificación de la cinemática con medidas en papel | ⏳ |

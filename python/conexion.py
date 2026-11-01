@@ -46,9 +46,10 @@ class ConexionESP32:
         """True cuando ya pasó el reinicio del ESP32 y puede recibir órdenes."""
         return self.conectado and time.monotonic() - self._t_apertura > ESPERA_ARRANQUE_S
 
-    def conectar(self, puerto):
+    def conectar(self, puerto, baudios=BAUDIOS):
         # timeout=0 -> leer nunca se queda esperando: devuelve lo que haya y sigue.
-        self._serial = serial.Serial(puerto, BAUDIOS, timeout=0)
+        # prueba_servos usa 115200; firmware/adquisicion usa 460800.
+        self._serial = serial.Serial(puerto, baudios, timeout=0)
         self._t_apertura = time.monotonic()
         self._pendiente = ""
 
@@ -59,6 +60,10 @@ class ConexionESP32:
 
     def enviar_servos(self, servo_hombro, servo_codo):
         self._serial.write(orden_servos(servo_hombro, servo_codo).encode("ascii"))
+
+    def enviar(self, texto):
+        """Envía una orden de texto cualquiera (p. ej. "s 1", "p 2", "?")."""
+        self._serial.write((texto.strip() + "\n").encode("ascii"))
 
     def leer_lineas(self):
         """Devuelve las líneas COMPLETAS que el ESP32 haya enviado desde la última vez."""
