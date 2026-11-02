@@ -1,0 +1,66 @@
+{
+  "sintetico": false,
+  "fecha": "2026-11-02T12:38:09",
+  "modo": "perfil",
+  "perfil": 2,
+  "perfil_nombre": "seno_lento",
+  "duracion_s": 25.99,
+  "muestras": 2600,
+  "perdidas": 0,
+  "firmware": "cfg version=adquisicion-1.2 fs_hz=100 periodo_us=10000 baudios=460800 gyro_lsb_dps=65.5 acc_lsb_g=16384 dlpf_hz=44 imu1=0x68 imu2=0x69 imu1_ok=1 imu2_ok=1 pulso_us=500-2500",
+  "config_imu": {
+    "version_firmware": "adquisicion-1.2",
+    "baudios": 460800,
+    "fs_hz": 100.0,
+    "dlpf_hz": 44,
+    "gyro_lsb_por_dps": 65.5,
+    "acc_lsb_por_g": 16384.0,
+    "eje_giro": {
+      "1": [
+        "gz",
+        1
+      ],
+      "2": [
+        "gz",
+        1
+      ]
+    },
+    "plano_vertical": false,
+    "ejes_inclinacion": {
+      "1": [
+        [
+          "ax",
+          1
+        ],
+        [
+          "ay",
+          1
+        ]
+      ],
+      "2": [
+        [
+          "ax",
+          1
+        ],
+        [
+          "ay",
+          1
+        ]
+      ]
+    },
+    "offset_inclinacion_deg": {
+      "1": 0.0,
+      "2": 0.0
+    }
+  },
+  "calibracion": {
+    "hombro_offset": 0.0,
+    "hombro_signo": 1,
+    "codo_offset": 90.0,
+    "codo_signo": -1,
+    "L1_mm": 105.0,
+    "L2_mm": 85.0
+  },
+  "commit": "71b8c44+cambios_sin_commit",
+  "nota": ""
+}
