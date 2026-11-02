@@ -13,7 +13,7 @@ L2_MM = 85.0    # codo -> punta
 #   SIGNO : +1 si al subir el ángulo del servo el eslabón gira antihorario; −1 si no.
 # ⚠️ PROVISIONALES hasta calibrar con el brazo montado.
 HOMBRO_OFFSET, HOMBRO_SIGNO = 0.0, +1   # servo 0° -> θ1 = 0° (eslabón hacia +x)
-CODO_OFFSET, CODO_SIGNO = 90.0, +1      # servo 90° -> θ2 = 0° (brazo estirado)
+CODO_OFFSET, CODO_SIGNO = 90.0, -1      # servo 90° -> θ2 = 0° (brazo estirado)
 
 SERVO_MIN, SERVO_MAX = 0, 180
 
