@@ -130,22 +130,23 @@ class InterfazIMU:
         self.boton_conectar = Button(self.fig.add_axes([xc + 0.12, 0.915, 0.08, 0.035]),
                                      "Conectar")
         self.boton_conectar.on_clicked(self.al_conectar)
-        self.b_calibrar = boton(0.865, "Calibrar sesgo (brazo QUIETO 3 s)", self.al_calibrar)
-        self.fig.text(xc, 0.83, "Grabar capturas (datos/crudos/)", weight="bold")
-        self.b_reposo = boton(0.785, f"Grabar reposo {DURACION_REPOSO_S:.0f} s", self.al_grabar_reposo)
-        self.b_p1 = boton(0.745, "Perfil 1: escalones (26 s)", lambda _: self.al_perfil(1))
-        self.b_p2 = boton(0.705, "Perfil 2: seno lento (26 s)", lambda _: self.al_perfil(2))
-        self.b_p3 = boton(0.665, "Perfil 3: seno rápido (16 s)", lambda _: self.al_perfil(3))
-        self.b_libre = boton(0.625, "Grabar libre (iniciar / detener)", self.al_grabar_libre)
+        self.b_inicio = boton(0.870, "Ir a posición de inicio (servos 90°, 90°)", self.al_ir_a_inicio)
+        self.b_calibrar = boton(0.830, "Calibrar sesgo (brazo QUIETO 3 s)", self.al_calibrar)
+        self.fig.text(xc, 0.795, "Grabar capturas (datos/crudos/)", weight="bold")
+        self.b_reposo = boton(0.750, f"Grabar reposo {DURACION_REPOSO_S:.0f} s", self.al_grabar_reposo)
+        self.b_p1 = boton(0.710, "Perfil 1: escalones (26 s)", lambda _: self.al_perfil(1))
+        self.b_p2 = boton(0.670, "Perfil 2: seno lento (26 s)", lambda _: self.al_perfil(2))
+        self.b_p3 = boton(0.630, "Perfil 3: seno rápido (16 s)", lambda _: self.al_perfil(3))
+        self.b_libre = boton(0.590, "Grabar libre (iniciar / detener)", self.al_grabar_libre)
 
-        self.fig.text(xc, 0.585, "Mover el brazo con:", weight="bold")
-        self.radio_fuente = RadioButtons(self.fig.add_axes([xc, 0.44, wc, 0.14]), FUENTES)
-        self.fig.text(xc, 0.415, "Q del Kalman:", weight="bold")
+        self.fig.text(xc, 0.555, "Mover el brazo con:", weight="bold")
+        self.radio_fuente = RadioButtons(self.fig.add_axes([xc, 0.415, wc, 0.135]), FUENTES)
+        self.fig.text(xc, 0.39, "Q del Kalman:", weight="bold")
         nombres_q = [c["nombre"] for c in self.proc.configs]
-        self.radio_q = RadioButtons(self.fig.add_axes([xc, 0.305, wc, 0.105]), nombres_q,
+        self.radio_q = RadioButtons(self.fig.add_axes([xc, 0.285, wc, 0.1]), nombres_q,
                                     active=nombres_q.index(self.proc.config_q["nombre"]))
         self.radio_q.on_clicked(self.al_cambiar_q)
-        self.texto_msg = self.fig.text(xc, 0.29, "", family="monospace", fontsize=8.5, va="top",
+        self.texto_msg = self.fig.text(xc, 0.27, "", family="monospace", fontsize=8.5, va="top",
                                        color="tab:blue")
 
         # Todo lo que cambia en cada cuadro se dibuja con blitting.
@@ -183,6 +184,14 @@ class InterfazIMU:
             return
         self._texto_boton_conectar("Desconectar")
         self.anotar(f"Conectado a {puerto}. Esperando reinicio del ESP32...")
+
+    def al_ir_a_inicio(self, _):
+        if self.perfil_activo:
+            self.anotar("Hay un perfil en curso: espera a que termine.")
+            return
+        self.radio_fuente.set_active(0)        # mover con los sliders
+        self.vista.mover_a(*servo_a_modelo(90, 90))
+        self.anotar("Yendo a la posición de inicio (90°, 90°).")
 
     def al_calibrar(self, _):
         if not self.conexion.conectado:

@@ -110,6 +110,10 @@ class ProcesadorTiempoReal:
 
         if self._t_us_ant is None:
             dt = 0.0
+            if not self.calibrado:
+                # Primera muestra: arrancar en la pose de la consigna, no en 0°
+                # (si no, se ve un desfase enorme hasta calibrar).
+                self.reiniciar(phi_cmd)
         else:
             dt = ((t_us - self._t_us_ant) % 2**32) / 1e6   # micros() se desborda a los 71 min
         self._t_us_ant = t_us
