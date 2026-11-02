@@ -3,9 +3,7 @@
   "estatico": "datos/crudos/estatico_01.csv",
   "dinamico_e1": "datos/crudos/escalones_01.csv",
   "ajuste": [
-    "datos/crudos/escalones_01.csv",
-    "datos/crudos/seno_lento_01.csv",
-    "datos/crudos/seno_rapido_01.csv"
+    "datos/crudos/escalones_01.csv"
   ],
   "validacion": [],
   "regla": "ajuste = repetici\u00f3n 01 de cada perfil; validaci\u00f3n = repetici\u00f3n 02"

@@ -18,6 +18,12 @@ import pandas as pd
 import config_imu as C
 import parametros as P
 
+# Al empezar un perfil, el servo puede venir de OTRA posición (p. ej. la del
+# reposo anterior) y tarda unos 0.5 s en llegar a (90°, 90°). Ese movimiento
+# ensuciaría el sesgo (se promedia el reposo inicial) y la condición inicial.
+# Por eso se descarta el comienzo del reposo inicial (fase 0).
+DESCARTE_INICIO_PERFIL_S = 1.0
+
 
 @dataclass
 class Registro:
@@ -69,11 +75,24 @@ def _config(meta, clave, por_defecto):
     return meta.get("config_imu", {}).get(clave, por_defecto)
 
 
-def cargar(ruta_csv):
+def _descartar_inicio(crudo):
+    """Quita el primer DESCARTE_INICIO_PERFIL_S de la fase 0, si el archivo empieza en ella."""
+    if len(crudo) == 0 or crudo["fase"].iloc[0] != 0:
+        return crudo, 0
+    t = (_desenrollar_us(crudo["t1_us"].to_numpy()) - int(crudo["t1_us"].iloc[0])) / 1e6
+    quitar = (crudo["fase"].to_numpy() == 0) & (t < DESCARTE_INICIO_PERFIL_S)
+    return crudo[~quitar].reset_index(drop=True), int(quitar.sum())
+
+
+def cargar(ruta_csv, descartar_inicio=True):
     ruta_csv = Path(ruta_csv)
     crudo = pd.read_csv(ruta_csv)
+    descartadas = 0
+    if descartar_inicio:
+        crudo, descartadas = _descartar_inicio(crudo)
     ruta_json = ruta_csv.with_suffix(".json")
     meta = json.loads(ruta_json.read_text(encoding="utf-8")) if ruta_json.exists() else {}
+    meta["_muestras_descartadas_inicio"] = descartadas
 
     g_lsb = _config(meta, "gyro_lsb_por_dps", C.GYRO_LSB_POR_DPS)
     a_lsb = _config(meta, "acc_lsb_por_g", C.ACC_LSB_POR_G)

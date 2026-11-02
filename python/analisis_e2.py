@@ -63,7 +63,7 @@ def verdad(reg, ruta):
     v = ruta.with_name(ruta.stem + "_verdad.csv")
     if not v.exists():
         return None
-    d = pd.read_csv(v)
+    d = pd.read_csv(v).iloc[reg.meta.get("_muestras_descartadas_inicio", 0):]   # mismo recorte
     return theta_de_phi(d[["phi1_deg", "phi2_deg"]].to_numpy())
 
 

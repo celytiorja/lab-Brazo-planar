@@ -1,10 +1,21 @@
 /*
   ADQUISICIÓN — Brazo planar 2 GDL (Entregas 1 y 2)
   =================================================
-  Hace tres cosas a la vez, a un ritmo FIJO de 100 muestras por segundo:
-    1) Lee las dos MPU-6050 (giroscopio + acelerómetro, valores CRUDOS en cuentas).
+  Hace tres cosas a la vez:
+    1) Lee las dos MPU-6050 a un ritmo FIJO de 100 muestras por segundo
+       (giroscopio + acelerómetro, valores CRUDOS en cuentas).
     2) Mueve los servos: a mano (órdenes h/c) o con un PERFIL repetible.
     3) Envía cada muestra por USB como una línea de texto que empieza con "D,".
+
+  ¿Por qué DOS TAREAS? (v1.1) El ESP32 tiene dos núcleos. En la v1.0 todo iba en
+  loop() y se descubrió con datos reales que servo.write() BLOQUEA ~15 ms si se
+  llama antes de que termine el pulso anterior (20 ms): en los perfiles seno el
+  muestreo bajaba a ~55 Hz con Δt de hasta 40 ms. Ahora:
+    - Núcleo 0, tarea "muestreo": SOLO lee las IMU cada 10 ms exactos
+      (vTaskDelayUntil) y deja cada muestra en una cola.
+    - Núcleo 1, loop(): órdenes, perfiles, servos (máx. 1 escritura cada 20 ms)
+      y envío por USB de lo que haya en la cola.
+  Así, aunque un servo se bloquee, la medición no se entera.
 
   Monitor Serie / Python: 460800 baudios, fin de línea "Nueva línea".
   ¿Por qué 460800 y no 115200? Cada línea tiene ~115 caracteres y se envían 100
@@ -29,7 +40,7 @@
 #include <Wire.h>
 #include <ESP32Servo.h>
 
-const char *VERSION = "adquisicion-1.0";
+const char *VERSION = "adquisicion-1.1";
 
 // ---------- Pines (ver docs/02_conexiones.md) ----------
 const int PIN_SERVO_HOMBRO = 25;
@@ -57,16 +68,33 @@ const int PULSO_MIN_US = 500;
 const int PULSO_MAX_US = 2500;
 Servo servoHombro, servoCodo;
 
-// ---------- Estado ----------
-bool transmitiendo = false;
-int perfil = 0;          // 0 = control manual
-int fase = -1;           // -1 manual, 0 reposo inicial, 1 movimiento, 2 reposo final
+const uint32_t MIN_ENTRE_ESCRITURAS_US = 20000;   // un pulso de servo dura 20 ms
+
+// ---------- Estado compartido entre los dos núcleos ----------
+// "volatile": el compilador no debe guardar copias, porque la otra tarea puede
+// cambiar el valor en cualquier momento.
+volatile bool transmitiendo = false;
+volatile int perfil = 0;          // 0 = control manual
+volatile int fase = -1;           // -1 manual, 0 reposo inicial, 1 movimiento, 2 reposo final
+volatile int cmdH = 90, cmdC = 90; // lo ÚLTIMO que se escribió a cada servo
 uint32_t t0Perfil = 0;
-int cmdH = 90, cmdC = 90;
-uint32_t seq = 0;
-uint32_t proximo = 0;
 bool imu1Ok = false, imu2Ok = false;
 String entrada = "";
+
+// Pedido de posición (puede llegar más rápido de lo que conviene escribir al servo).
+int pedidoH = 90, pedidoC = 90;
+uint32_t ultimaEscrituraH = 0, ultimaEscrituraC = 0;
+bool finPerfilPendiente = false;
+
+// Una muestra viaja del núcleo 0 al núcleo 1 dentro de esta estructura.
+struct Muestra {
+  uint32_t seq, t1, t2;
+  int8_t perfil, fase;
+  int16_t cmdH, cmdC;
+  int16_t a1[3], g1[3], a2[3], g2[3];
+  bool ok1, ok2;
+};
+QueueHandle_t cola;               // "buzón" entre las dos tareas (64 muestras = 0.64 s)
 
 // =====================================================================
 // IMU
@@ -167,11 +195,25 @@ void imprimirConfiguracion() {
                 imu1Ok, imu2Ok, PULSO_MIN_US, PULSO_MAX_US);
 }
 
+// Solo ANOTA el pedido; actualizarServos() lo aplica sin escribir más de una vez
+// cada 20 ms por servo (más rápido no sirve: el servo recibe un pulso cada 20 ms).
 void moverServos(int h, int c) {
-  h = constrain(h, 0, 180);
-  c = constrain(c, 0, 180);
-  if (h != cmdH) { servoHombro.write(h); cmdH = h; }
-  if (c != cmdC) { servoCodo.write(c);   cmdC = c; }
+  pedidoH = constrain(h, 0, 180);
+  pedidoC = constrain(c, 0, 180);
+}
+
+void actualizarServos() {
+  uint32_t ahora = micros();
+  if (pedidoH != cmdH && ahora - ultimaEscrituraH >= MIN_ENTRE_ESCRITURAS_US) {
+    servoHombro.write(pedidoH);
+    cmdH = pedidoH;
+    ultimaEscrituraH = ahora;
+  }
+  if (pedidoC != cmdC && ahora - ultimaEscrituraC >= MIN_ENTRE_ESCRITURAS_US) {
+    servoCodo.write(pedidoC);
+    cmdC = pedidoC;
+    ultimaEscrituraC = ahora;
+  }
 }
 
 void procesarOrden(String orden) {
@@ -193,16 +235,17 @@ void procesarOrden(String orden) {
   }
   if (cual == 'p') {
     if (duracionMovimiento(valor) <= 0) { Serial.println("# perfil_invalido"); return; }
-    perfil = valor;
     t0Perfil = micros();
+    fase = 0;                     // antes que "perfil": ninguna muestra sale con fase −1
+    perfil = valor;
     transmitiendo = true;
     Serial.printf("# perfil=%d\n", perfil);
     return;
   }
   if (cual == 'h' || cual == 'c') {
     if (perfil != 0) { Serial.println("# ocupado_perfil"); return; }
-    if (cual == 'h') moverServos(valor, cmdC);
-    else             moverServos(cmdH, valor);
+    if (cual == 'h') moverServos(valor, pedidoC);
+    else             moverServos(pedidoH, valor);
     return;
   }
   Serial.println("# orden_desconocida");
@@ -229,44 +272,73 @@ void leerOrdenes() {
 }
 
 // =====================================================================
-// Una muestra
+// NÚCLEO 0: tarea de muestreo (solo IMU, ritmo exacto)
 // =====================================================================
-void tomarMuestra() {
-  if (perfil != 0) {
-    float t = (micros() - t0Perfil) / 1e6;
-    int h, c, f;
-    if (!consignaPerfil(perfil, t, h, c, f)) {
-      perfil = 0; fase = -1; transmitiendo = false;
-      Serial.println("# fin_perfil");
-      return;
-    }
-    fase = f;
-    moverServos(h, c);
-  }
-  if (!transmitiendo) return;
+void tareaMuestreo(void *) {
+  uint32_t seq = 0;
+  TickType_t ultimo = xTaskGetTickCount();
+  for (;;) {
+    // Espera HASTA el próximo múltiplo de 10 ms (no "10 ms desde ahora"):
+    // así los retrasos no se acumulan.
+    vTaskDelayUntil(&ultimo, pdMS_TO_TICKS(PERIODO_US / 1000));
+    if (!transmitiendo) continue;
 
-  int16_t a1[3], g1[3], a2[3], g2[3];
-  uint32_t t1 = micros();
-  bool ok1 = leerIMU(IMU1, a1, g1);
-  uint32_t t2 = micros();
-  bool ok2 = leerIMU(IMU2, a2, g2);
-  uint32_t n = seq++;
-  if (!ok1 || !ok2) {          // se salta la muestra: Python verá el hueco en seq
-    Serial.printf("# error_i2c seq=%lu imu1=%d imu2=%d\n", (unsigned long)n, ok1, ok2);
+    Muestra m;
+    m.t1 = micros();
+    m.ok1 = leerIMU(IMU1, m.a1, m.g1);
+    m.t2 = micros();
+    m.ok2 = leerIMU(IMU2, m.a2, m.g2);
+    m.seq = seq++;
+    m.perfil = perfil;
+    m.fase = fase;
+    m.cmdH = cmdH;
+    m.cmdC = cmdC;
+    // Si la cola está llena (el USB no da abasto) la muestra se pierde:
+    // Python lo verá como un hueco en "seq".
+    xQueueSend(cola, &m, 0);
+  }
+}
+
+// =====================================================================
+// NÚCLEO 1: perfiles, servos y envío por USB
+// =====================================================================
+void actualizarPerfil() {
+  if (perfil == 0) return;
+  float t = (micros() - t0Perfil) / 1e6;
+  int h, c, f;
+  if (!consignaPerfil(perfil, t, h, c, f)) {
+    perfil = 0; fase = -1; transmitiendo = false;
+    finPerfilPendiente = true;    // se avisa cuando ya se enviaron todas sus muestras
     return;
   }
+  fase = f;
+  moverServos(h, c);
+}
 
-  char linea[200];
-  snprintf(linea, sizeof(linea),
-           "D,%lu,%lu,%lu,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-           (unsigned long)n, (unsigned long)t1, (unsigned long)t2, perfil, fase, cmdH, cmdC,
-           a1[0], a1[1], a1[2], g1[0], g1[1], g1[2],
-           a2[0], a2[1], a2[2], g2[0], g2[1], g2[2]);
-  Serial.print(linea);
+void enviarMuestras() {
+  Muestra m;
+  while (xQueueReceive(cola, &m, 0) == pdTRUE) {
+    if (!m.ok1 || !m.ok2) {
+      Serial.printf("# error_i2c seq=%lu imu1=%d imu2=%d\n", (unsigned long)m.seq, m.ok1, m.ok2);
+      continue;
+    }
+    char linea[200];
+    snprintf(linea, sizeof(linea),
+             "D,%lu,%lu,%lu,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+             (unsigned long)m.seq, (unsigned long)m.t1, (unsigned long)m.t2,
+             m.perfil, m.fase, m.cmdH, m.cmdC,
+             m.a1[0], m.a1[1], m.a1[2], m.g1[0], m.g1[1], m.g1[2],
+             m.a2[0], m.a2[1], m.a2[2], m.g2[0], m.g2[1], m.g2[2]);
+    Serial.print(linea);
+  }
+  if (finPerfilPendiente && uxQueueMessagesWaiting(cola) == 0) {
+    finPerfilPendiente = false;
+    Serial.println("# fin_perfil");
+  }
 }
 
 void setup() {
-  Serial.setTxBufferSize(2048);   // cola de salida grande: escribir no frena el muestreo
+  Serial.setTxBufferSize(2048);   // cola de salida grande: escribir no frena el programa
   Serial.begin(BAUDIOS);
   delay(300);
 
@@ -283,18 +355,19 @@ void setup() {
   servoCodo.write(cmdC);
 
   imprimirConfiguracion();
-  proximo = micros() + PERIODO_US;
+
+  // Desde aquí el bus I2C lo usa SOLO la tarea de muestreo.
+  cola = xQueueCreate(64, sizeof(Muestra));
+  xTaskCreatePinnedToCore(tareaMuestreo, "muestreo", 4096, NULL,
+                          3,     // prioridad alta: que nada la interrumpa
+                          NULL,
+                          0);    // núcleo 0 (loop() corre en el núcleo 1)
 }
 
 void loop() {
   leerOrdenes();
-  // Muestreo a ritmo fijo: no "esperar 10 ms" (se acumularía el error), sino
-  // programar la siguiente muestra exactamente 10 ms después de la anterior.
-  if ((int32_t)(micros() - proximo) >= 0) {
-    proximo += PERIODO_US;
-    if ((int32_t)(micros() - proximo) > (int32_t)(5 * PERIODO_US)) {
-      proximo = micros() + PERIODO_US;   // nos atrasamos mucho: resincronizar
-    }
-    tomarMuestra();
-  }
+  actualizarPerfil();
+  actualizarServos();
+  enviarMuestras();
+  delay(1);                       // cede el procesador un instante
 }
