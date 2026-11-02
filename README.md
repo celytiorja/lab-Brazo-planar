@@ -15,6 +15,7 @@ docs/
   02_conexiones.md               ← pines, diagrama y alimentación
   03_interfaz.md                 ← cómo funciona la interfaz y la calibración
   04_captura_y_entregas.md       ← capturar datos reales y generar E1 y E2
+  05_teleoperacion_camara.md     ← el robot copia tu brazo (cámara del teléfono)
   SUSTENTACION.md                ← qué mostrar y qué decir
   ENTREGAS.md                    ← localizadores E1–E9 y respuestas de comprobación individual
 firmware/
@@ -28,7 +29,8 @@ python/
   conexion.py                    ← comunicación serie con el ESP32
   simulador.py                   ← simulador interactivo (sin hardware)
   interfaz.py                    ← interfaz gráfica que mueve el brazo real (sin IMU)
-  interfaz_imu.py                ← interfaz con las IMU en vivo, grabación y teleoperación
+  interfaz_imu.py                ← interfaz con las IMU en vivo y grabación de capturas
+  teleop_camara.py               ← teleoperación con cámara + Kalman (vision.py, kalman_camara.py)
   analisis_e1.py / analisis_e2.py← resultados de la Entrega 1 y 2 (Kalman)
   analisis_e1_extra.py           ← sensibilidad, sesgo, Δt, estructura de R, repetibilidad...
   verificacion_cinematica.py     ← punto 1: error del brazo real medido en papel

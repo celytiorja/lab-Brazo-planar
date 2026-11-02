@@ -91,6 +91,12 @@
   en reposo PURO (no mezclar con la cola del movimiento). La interfaz sube cada
   captura sola (python/sincronizar.py: add/commit/pull -X ours/manifiesto/push).
   Pendiente: verificación de cinemática en papel (punto 1 E1) y teleoperación.
+- Teleoperación (E2, decidido 2026-11-02): OPCIÓN 1 = solo cámara del teléfono
+  (DroidCam, URL http://IP:4747/video), 3 marcadores de color (hombro/codo/muñeca),
+  vista desde arriba; Kalman [θ, ω] con medición de ángulo (kalman_camara.py,
+  q = r·(2π f_n)^4). IMU siguen en el robot. Opción 2 (fusión cámara + giros en el
+  brazo humano) queda abierta según lo que diga el profesor. Probado solo con
+  video simulado. Guía: docs/05_teleoperacion_camara.md.
 - Datos sintéticos en datos/sinteticos (siempre marcados; nunca presentarlos
   como reales). Resultados de prueba en resultados/sinteticos.
 - Pendiente: capturas reales, verificación de cinemática en papel milimetrado

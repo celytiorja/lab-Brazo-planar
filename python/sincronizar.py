@@ -29,7 +29,7 @@ def _git(*args):
     return r.returncode, (r.stdout + r.stderr).strip()
 
 
-def subir_capturas(mensaje, avisar=print):
+def subir_capturas(mensaje, avisar=print, rutas=("datos/crudos",)):
     """Hace add → commit → pull → manifiesto → push. `avisar(texto)` informa cada paso."""
     if not _candado.acquire(blocking=False):
         avisar("Ya se está subiendo una captura; esta irá en la próxima subida.")
@@ -39,7 +39,7 @@ def subir_capturas(mensaje, avisar=print):
         if codigo != 0:
             avisar("Git no está disponible: las capturas quedan solo en tu PC.")
             return False
-        _git("add", "datos/crudos")
+        _git("add", *rutas)
         codigo, salida = _git("commit", "-m", mensaje)
         if codigo != 0 and "nothing to commit" not in salida and "nada para hacer commit" not in salida:
             avisar(f"git commit falló: {salida[-120:]}")
@@ -65,8 +65,8 @@ def subir_capturas(mensaje, avisar=print):
         _candado.release()
 
 
-def subir_en_segundo_plano(mensaje, avisar=print):
+def subir_en_segundo_plano(mensaje, avisar=print, rutas=("datos/crudos",)):
     """Igual que subir_capturas, pero sin congelar la ventana (la red puede tardar)."""
-    hilo = threading.Thread(target=subir_capturas, args=(mensaje, avisar), daemon=True)
+    hilo = threading.Thread(target=subir_capturas, args=(mensaje, avisar, rutas), daemon=True)
     hilo.start()
     return hilo
