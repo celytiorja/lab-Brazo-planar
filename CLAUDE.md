@@ -57,9 +57,10 @@
 - Git: sabe status/log/diff/pull/add/commit/push. Primer commit propio `2f1a9a7`.
 - Calibración: `CODO_SIGNO = −1` ya está en GitHub (commit 7d1200e del usuario).
 - Ya sustentó una vez SIN IMU (con datos sintéticos, declarados como tales).
-- Ya tiene las MPU. Pines: docs/02_conexiones.md. Pendiente que diga qué eje del
-  giro cambia al girar (para `EJE_GIRO` en `python/config_imu.py`, hoy gz, +1) y
-  si el brazo se mueve en plano vertical u horizontal (`PLANO_VERTICAL`).
+- Ya tiene las MPU. Pines: docs/02_conexiones.md. `EJE_GIRO` = gz con signo +1
+  en ambas (los datos reales siguen a la consigna). **Plano HORIZONTAL** (sobre la
+  mesa, confirmado 2026-11-02) → `PLANO_VERTICAL = False`: el acelerómetro NO da
+  el ángulo; la deriva no es observable con lo disponible (declararlo en E2).
 - Código final: `firmware/adquisicion` (460800 baud) + `python/interfaz_imu.py`
   (IMU en vivo, calibrar sesgo, grabar reposo/perfiles en datos/crudos con
   manifiesto automático, teleoperación con directa/MM/Kalman) +
