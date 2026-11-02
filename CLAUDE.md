@@ -55,9 +55,7 @@
 ## Estado (2026-11-01)
 
 - Git: sabe status/log/diff/pull/add/commit/push. Primer commit propio `2f1a9a7`.
-- Calibración: el usuario cambió `CODO_SIGNO` a −1 en su PC y funciona, pero
-  NUNCA lo subió (al 2026-11-01 sigue sin estar en GitHub). No editar
-  `parametros.py` desde aquí hasta que lo suba; recordarle add → commit → push.
+- Calibración: `CODO_SIGNO = −1` ya está en GitHub (commit 7d1200e del usuario).
 - Ya sustentó una vez SIN IMU (con datos sintéticos, declarados como tales).
 - Ya tiene las MPU. Pines: docs/02_conexiones.md. Pendiente que diga qué eje del
   giro cambia al girar (para `EJE_GIRO` en `python/config_imu.py`, hoy gz, +1) y
@@ -74,6 +72,14 @@
   `interfaz_imu.py COM3` conecta y grafica en Windows (hubo que quitar
   matplotlib.use("Agg") de reporte.py). Siguiente: pegar las IMU en los
   eslabones (no hace falta el eje), verificar signo del giro, capturar.
+- 2026-11-02 capturas reales: estatico_01 (fw1.0), estatico_02, escalones_01
+  (fw1.0), escalones_02/03 (fw1.1): todas a 100.00 Hz sin pérdidas. Los senos
+  fallaron dos veces (fw1.0: servo.write bloqueaba ~15 ms → 55 Hz; fw1.1: la
+  interrupción I2C quedaba en el núcleo 1 → lecturas de 39 ms) y están en
+  datos/crudos/descartados/ con LEEME. fw1.2 inicia Wire en la tarea del
+  núcleo 0 (sin probar aún). Faltan: seno_lento_01/02 y seno_rapido_01/02.
+  Análisis: datos_imu.cargar descarta el 1.er segundo de la fase 0 (el servo
+  llega desde la pose anterior); con eso error estacionario 49° → 5.8°.
 - Datos sintéticos en datos/sinteticos (siempre marcados; nunca presentarlos
   como reales). Resultados de prueba en resultados/sinteticos.
 - Pendiente: capturas reales, verificación de cinemática en papel milimetrado
