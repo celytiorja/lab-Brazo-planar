@@ -1,0 +1,80 @@
+{
+  "configuracion": {
+    "nombre": "Q_media",
+    "f_corte_hz": 5.0,
+    "razon": "f_c = 5 Hz ≈ 5× la frecuencia del seno rápido: lo sigue sin atenuarlo; retraso ≈ 32 ms; compromiso ruido/retraso.",
+    "q": 0.009720442509064014,
+    "r_usada": 0.0009768261894873046,
+    "dt_usado": 0.009999999999999998
+  },
+  "regla": "menor ruido de ω en reposo PURO (estatico_03) entre las configuraciones con retraso de ω ≤ 40.0 ms (retraso promedio en registros de ajuste)",
+  "retraso_max_ms": 40.0,
+  "configuraciones_evaluadas": [
+    {
+      "nombre": "Q_baja",
+      "f_corte_hz": 1.5,
+      "razon": "f_c = 1.5 Hz: deja pasar el seno lento con margen; máxima suavidad; retraso ≈ 106 ms; atenúa el seno rápido y deforma los escalones.",
+      "q": 0.0008683223898183722,
+      "r_usada": 0.0009768261894873046,
+      "dt_usado": 0.009999999999999998
+    },
+    {
+      "nombre": "Q_media",
+      "f_corte_hz": 5.0,
+      "razon": "f_c = 5 Hz ≈ 5× la frecuencia del seno rápido: lo sigue sin atenuarlo; retraso ≈ 32 ms; compromiso ruido/retraso.",
+      "q": 0.009720442509064014,
+      "r_usada": 0.0009768261894873046,
+      "dt_usado": 0.009999999999999998
+    },
+    {
+      "nombre": "Q_alta",
+      "f_corte_hz": 15.0,
+      "razon": "f_c = 15 Hz: sigue incluso los escalones del servo; retraso ≈ 11 ms; casi no filtra (se acerca a la integración directa).",
+      "q": 0.09338395196080299,
+      "r_usada": 0.0009768261894873046,
+      "dt_usado": 0.009999999999999998
+    }
+  ],
+  "resumen_ajuste": [
+    {
+      "metodo": "Kalman Q_alta",
+      "retraso_omega_ms": 4.6719827237718405,
+      "ruido_omega_reposo_puro_dps": 0.02246560072522813,
+      "ruido_omega_reposo_dps": 0.48612627121280094,
+      "error_estacionario_rms_deg": 2.619053581725017,
+      "deriva_final_deg": 3.348795951565833
+    },
+    {
+      "metodo": "Kalman Q_baja",
+      "retraso_omega_ms": 55.29665763524711,
+      "ruido_omega_reposo_puro_dps": 0.008478968532446606,
+      "ruido_omega_reposo_dps": 0.2632995519068942,
+      "error_estacionario_rms_deg": 2.6203273264524913,
+      "deriva_final_deg": 3.349772662692883
+    },
+    {
+      "metodo": "Kalman Q_media",
+      "retraso_omega_ms": 17.586299925457265,
+      "ruido_omega_reposo_puro_dps": 0.014444592385934131,
+      "ruido_omega_reposo_dps": 0.3647233380431492,
+      "error_estacionario_rms_deg": 2.6191044140852195,
+      "deriva_final_deg": 3.3493791840115867
+    }
+  ],
+  "R": [
+    [
+      0.0008918370147547985,
+      -4.0821834693992056e-07
+    ],
+    [
+      -4.0821834693992056e-07,
+      0.0010618153642198106
+    ]
+  ],
+  "registros_ajuste": [
+    "datos/crudos/escalones_01.csv",
+    "datos/crudos/seno_lento_01.csv",
+    "datos/crudos/seno_rapido_01.csv"
+  ],
+  "commit": "54720e5+cambios_sin_commit"
+}

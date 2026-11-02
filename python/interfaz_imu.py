@@ -20,6 +20,7 @@ Uso típico:
   4. Perfil 1, 2 y 3 (dos veces cada uno: la 1.ª es AJUSTE y la 2.ª VALIDACIÓN).
   5. python python/analisis_e1.py   y   python python/analisis_e2.py
 """
+import queue
 import sys
 import time
 import traceback
@@ -45,6 +46,7 @@ PASO_GRAFICA = 3                # en las gráficas se dibuja 1 de cada 3 muestra
 PERIODO_ESCALAS_S = 1.0         # cada cuánto se revisa si hay que cambiar la escala
 PERIODO_ORDENES_S = 0.05        # máximo 20 órdenes por segundo a los servos
 DURACION_REPOSO_S = 40.0        # la guía pide al menos 30 s
+SUBIR_AUTOMATICO = True         # tras cada captura: git add/commit/pull/push (sincronizar.py)
 FUENTES = ("Sliders (consigna)", "Integración directa", "Media móvil", "Kalman")
 COLOR = {"dir": "0.45", "mm": "tab:orange", "kf": "tab:green", "cmd": "k"}
 
@@ -63,6 +65,7 @@ class InterfazIMU:
         self.ultimo_envio = None
         self.t_ultimo_envio = 0.0
         self.mensajes = []
+        self._avisos_hilo = queue.Queue()   # mensajes que llegan desde la subida a GitHub
         self._ciclo = 0
         self.n_lineas = 0          # todo lo que llega por el puerto
         self.n_datos = 0           # solo las líneas de datos "D,..." válidas
@@ -252,6 +255,8 @@ class InterfazIMU:
                     self.anotar(f"Conexión perdida: {e}")
             # Leer y enviar en CADA ciclo (la teleoperación no espera al dibujo);
             # dibujar solo en algunos: dibujar es lo más caro.
+            while not self._avisos_hilo.empty():   # avisos de la subida (otro hilo)
+                self.anotar(self._avisos_hilo.get())
             self._ciclo += 1
             if self._ciclo % DIBUJAR_CADA == 0:
                 self._dibujar()
@@ -345,6 +350,10 @@ class InterfazIMU:
         ruta = g.cerrar(nota)
         self.anotar(f"Guardado {ruta.name} ({g.muestras} muestras)" if ruta
                     else "Grabación vacía: no se guardó")
+        if ruta and SUBIR_AUTOMATICO:
+            import sincronizar
+            self.anotar("Subiendo a GitHub en segundo plano...")
+            sincronizar.subir_en_segundo_plano(f"Captura: {ruta.stem}", self._avisos_hilo.put)
 
     def _texto_boton_conectar(self, texto):
         self.boton_conectar.label.set_text(texto)

@@ -80,6 +80,16 @@
   núcleo 0 (sin probar aún). Faltan: seno_lento_01/02 y seno_rapido_01/02.
   Análisis: datos_imu.cargar descarta el 1.er segundo de la fase 0 (el servo
   llega desde la pose anterior); con eso error estacionario 49° → 5.8°.
+- ✅ 2026-11-02: fw1.2 funciona (100 Hz, 0 pérdidas, I2C ≤ 544 µs con servos en
+  movimiento). Capturas completas; manifiesto automático con reglas: reposo =
+  1.º estacionario (Levene) → estatico_03; perfiles = solo repeticiones que pasan
+  validar_datos, incl. "el brazo medido sigue a la consigna" (escalones_02
+  rechazada: hombro no se movió). Ajuste: escalones_01, seno_lento_01,
+  seno_rapido_01; validación: escalones_03, seno_lento_02, seno_rapido_02.
+  Resultados reales en resultados/reales/ (Q_media elegida). Ruido de E2 se mide
+  en reposo PURO (no mezclar con la cola del movimiento). La interfaz sube cada
+  captura sola (python/sincronizar.py: add/commit/pull -X ours/manifiesto/push).
+  Pendiente: verificación de cinemática en papel (punto 1 E1) y teleoperación.
 - Datos sintéticos en datos/sinteticos (siempre marcados; nunca presentarlos
   como reales). Resultados de prueba en resultados/sinteticos.
 - Pendiente: capturas reales, verificación de cinemática en papel milimetrado

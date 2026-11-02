@@ -57,7 +57,16 @@ las IMU) deben moverse **junto al negro punteado** (la consigna).
 | 7 | Perfil 3 otra vez | `seno_rapido_02` | **validación** E2 |
 
 - Los archivos quedan en `datos/crudos/` (un `.csv` crudo y un `.json` con la configuración).
-- `datos/crudos/manifiesto.json` se arma solo.
+- `datos/crudos/manifiesto.json` se arma solo, con reglas fijas:
+  - **Reposo para R:** el primero que pase la prueba de **estacionariedad** (Levene, p > 0.05).
+  - **Perfiles:** solo las repeticiones que pasan **todos** los chequeos de `validar_datos.py`
+    (muestreo a 100 Hz, sin pérdidas, y que **el brazo medido haya seguido a la consigna**).
+    Ajuste = 1.ª válida y validación = 2.ª válida.
+- **Subida automática:** al terminar cada captura, la interfaz hace sola
+  `git add` → `git commit` → `git pull` → (rehace el manifiesto) → `git push`
+  (`python/sincronizar.py`). En la terminal verás `Subido a GitHub ✓`. Si no hay internet,
+  queda guardada en tu PC y se sube con la siguiente captura. Para desactivarla:
+  `SUBIR_AUTOMATICO = False` en `python/interfaz_imu.py`.
 - **Ajuste y validación son SIEMPRE capturas distintas**: las `_01` son de ajuste y las `_02`
   de validación.
 

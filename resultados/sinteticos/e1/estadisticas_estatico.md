@@ -17,4 +17,4 @@
 | w1 (giro en el plano) | °/s | 0.355 | 0.003665 | 0.06054 | 0.1374 | 0.5802 |
 | w2 (giro en el plano) | °/s | 0.1135 | 0.003541 | 0.0595 | -0.1374 | 0.3511 |
 
-Archivo: estatico_01. Generado por código · commit 103dfa9+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json
+Archivo: estatico_01. Generado por código · commit 54720e5+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json

@@ -1,0 +1,5 @@
+metodo,ruido_omega_reposo_dps,retraso_omega_ms,retraso_theta_ms,error_estacionario_rms_deg,deriva_final_deg,ruido_alfa_reposo_dps2,t_calculo_us
+Integración directa,0.140963,0,0,1.85187,1.47206,11.9942,5.2868
+Kalman Q_media,0.0941745,17.3259,3.81922,1.85208,1.47736,3.26507,68.7671
+Media móvil N=21 + Euler,0.0667114,98.2239,98.1217,1.85281,1.60463,0.887366,16.6705
+Media móvil N=5 + Euler,0.104367,19.6873,19.2236,1.85331,1.49007,3.59448,15.0982

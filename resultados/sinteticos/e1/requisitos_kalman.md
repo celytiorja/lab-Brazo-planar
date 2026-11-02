@@ -3,7 +3,7 @@
 - Ruido del giroscopio en reposo: σ1 = 0.0605 °/s, σ2 = 0.0595 °/s → R diagonal (ρ w1–w2 = +0.017).
 - Deriva SIN compensar el sesgo: +21.3 y +6.8 °/min. Compensada (fuera de muestra): -0.17 y -0.35 °/min.
 - Para bajar el ruido a la mitad, la media móvil necesita N = 5 → retraso ≈ 19 ms.
-- En movimiento suave (perfiles seno) el ruido aparente es 30.3× el de reposo.
+- En movimiento suave (perfiles seno) el ruido aparente es 27.5× el de reposo.
 
 ## Conclusión
 - **Integración directa:** retraso 0, pero todo el ruido pasa y la deriva se acumula.

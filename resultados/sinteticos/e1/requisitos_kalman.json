@@ -28,14 +28,14 @@
   ],
   "media_movil_para_reducir_ruido_a_la_mitad": {
     "N": 5,
-    "retraso_ms": 19.274387788185393
+    "retraso_ms": 19.274704696171973
   },
   "deriva_final_perfil_por_metodo_deg": {
-    "Integración directa": 0.697171407559781,
-    "Media móvil N=21 + Euler": 0.6790174765036467,
-    "Media móvil N=5 + Euler": 0.6841953927161187
+    "Integración directa": 0.7324628344739417,
+    "Media móvil N=21 + Euler": 0.7141889426840149,
+    "Media móvil N=5 + Euler": 0.719470457171822
   },
-  "cociente_ruido_movimiento_reposo": 30.25997726004457,
+  "cociente_ruido_movimiento_reposo": 27.521192342926255,
   "requisitos": {
     "retraso_max_ms": 40.0,
     "ruido_omega_max_dps": 0.026653080908740474,

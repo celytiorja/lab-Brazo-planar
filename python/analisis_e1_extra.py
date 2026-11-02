@@ -1,3 +1,4 @@
+from pathlib import Path
 """ENTREGA 1 — Análisis complementarios (los llama analisis_e1.py).
 
 Cada función responde UNA pregunta de la guía y guarda su tabla/gráfica:
@@ -234,9 +235,12 @@ def estructura_R(est, sal, sint):
 # --------------------------------------------------------------------------- g
 def pares_repetidos(man):
     """Pares (rep 01, rep 02) del mismo perfil entre ajuste y validación."""
-    val = {r.replace("_02.csv", ""): r for r in man.get("validacion", [])}
-    return [(r, val[r.replace("_01.csv", "")]) for r in man.get("ajuste", [])
-            if r.replace("_01.csv", "") in val]
+    # Se empareja por el NOMBRE DEL PERFIL (lo que va antes del último "_"), no por
+    # el número: la validación puede ser _03 si la _02 se rechazó.
+    def perfil(r):
+        return Path(r).stem.rsplit("_", 1)[0]
+    val = {perfil(r): r for r in man.get("validacion", [])}
+    return [(r, val[perfil(r)]) for r in man.get("ajuste", []) if perfil(r) in val]
 
 
 def repetibilidad(man, sal):

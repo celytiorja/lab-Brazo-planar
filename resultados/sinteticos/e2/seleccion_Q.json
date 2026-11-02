@@ -7,7 +7,7 @@
     "r_usada": 0.0036030677527677975,
     "dt_usado": 0.010002507503751876
   },
-  "regla": "menor ruido de ω en reposo entre las configuraciones con retraso de ω ≤ 40.0 ms (promedio en registros de ajuste)",
+  "regla": "menor ruido de ω en reposo PURO (estatico_01) entre las configuraciones con retraso de ω ≤ 40.0 ms (retraso promedio en registros de ajuste)",
   "retraso_max_ms": 40.0,
   "configuraciones_evaluadas": [
     {
@@ -38,24 +38,27 @@
   "resumen_ajuste": [
     {
       "metodo": "Kalman Q_alta",
-      "retraso_omega_ms": 2.264423373558008,
-      "ruido_omega_reposo_dps": 0.03848401794149354,
-      "error_estacionario_rms_deg": 0.34347239832063564,
-      "deriva_final_deg": 0.35668344301365096
+      "retraso_omega_ms": 2.264459480556066,
+      "ruido_omega_reposo_puro_dps": 0.03978640471261967,
+      "ruido_omega_reposo_dps": 0.03884616010640151,
+      "error_estacionario_rms_deg": 0.37454481170309467,
+      "deriva_final_deg": 0.3743029059952079
     },
     {
       "metodo": "Kalman Q_baja",
-      "retraso_omega_ms": 68.5442297807242,
-      "ruido_omega_reposo_dps": 0.12683352688367502,
-      "error_estacionario_rms_deg": 0.3453493760319805,
-      "deriva_final_deg": 0.3566952669176331
+      "retraso_omega_ms": 68.54550690576978,
+      "ruido_omega_reposo_puro_dps": 0.012746120029695676,
+      "ruido_omega_reposo_dps": 0.14056503979553883,
+      "error_estacionario_rms_deg": 0.3767524075801983,
+      "deriva_final_deg": 0.3743379108328379
     },
     {
       "metodo": "Kalman Q_media",
-      "retraso_omega_ms": 13.384735594282196,
-      "ruido_omega_reposo_dps": 0.023126186310323534,
-      "error_estacionario_rms_deg": 0.3428554555634895,
-      "deriva_final_deg": 0.3535373016259082
+      "retraso_omega_ms": 13.38487043977066,
+      "ruido_omega_reposo_puro_dps": 0.023458720642537064,
+      "ruido_omega_reposo_dps": 0.023319354845900753,
+      "error_estacionario_rms_deg": 0.373890980694938,
+      "deriva_final_deg": 0.37115600521047537
     }
   ],
   "R": [
@@ -73,5 +76,5 @@
     "datos/sinteticos/seno_lento_01.csv",
     "datos/sinteticos/seno_rapido_01.csv"
   ],
-  "commit": "103dfa9+cambios_sin_commit"
+  "commit": "54720e5+cambios_sin_commit"
 }

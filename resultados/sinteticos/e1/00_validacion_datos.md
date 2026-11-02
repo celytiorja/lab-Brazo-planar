@@ -30,6 +30,7 @@
 | escalones_01 | sin saturación (|cuentas| < 32760) | OK | ninguna |
 | escalones_01 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
 | escalones_01 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(1)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| escalones_01 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 1.00, 0.99 |
 | seno_lento_01 | existe el JSON de configuración | OK | seno_lento_01.json |
 | seno_lento_01 | columnas esperadas | OK | 19 columnas |
 | seno_lento_01 | sin valores vacíos (NaN) | OK | 0 vacíos |
@@ -44,6 +45,7 @@
 | seno_lento_01 | sin saturación (|cuentas| < 32760) | OK | ninguna |
 | seno_lento_01 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
 | seno_lento_01 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(2)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_lento_01 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.99, 0.99 |
 | seno_rapido_01 | existe el JSON de configuración | OK | seno_rapido_01.json |
 | seno_rapido_01 | columnas esperadas | OK | 19 columnas |
 | seno_rapido_01 | sin valores vacíos (NaN) | OK | 0 vacíos |
@@ -58,6 +60,7 @@
 | seno_rapido_01 | sin saturación (|cuentas| < 32760) | OK | ninguna |
 | seno_rapido_01 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
 | seno_rapido_01 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(3)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_rapido_01 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.98, 0.95 |
 | escalones_02 | existe el JSON de configuración | OK | escalones_02.json |
 | escalones_02 | columnas esperadas | OK | 19 columnas |
 | escalones_02 | sin valores vacíos (NaN) | OK | 0 vacíos |
@@ -72,6 +75,7 @@
 | escalones_02 | sin saturación (|cuentas| < 32760) | OK | ninguna |
 | escalones_02 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
 | escalones_02 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(1)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| escalones_02 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 1.00, 0.99 |
 | seno_lento_02 | existe el JSON de configuración | OK | seno_lento_02.json |
 | seno_lento_02 | columnas esperadas | OK | 19 columnas |
 | seno_lento_02 | sin valores vacíos (NaN) | OK | 0 vacíos |
@@ -86,6 +90,7 @@
 | seno_lento_02 | sin saturación (|cuentas| < 32760) | OK | ninguna |
 | seno_lento_02 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
 | seno_lento_02 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(2)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_lento_02 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.99, 0.99 |
 | seno_rapido_02 | existe el JSON de configuración | OK | seno_rapido_02.json |
 | seno_rapido_02 | columnas esperadas | OK | 19 columnas |
 | seno_rapido_02 | sin valores vacíos (NaN) | OK | 0 vacíos |
@@ -100,5 +105,6 @@
 | seno_rapido_02 | sin saturación (|cuentas| < 32760) | OK | ninguna |
 | seno_rapido_02 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
 | seno_rapido_02 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(3)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_rapido_02 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.98, 0.95 |
 
-Resumen: {'OK': 93, 'AVISO': 5}. Generado por código · commit 103dfa9+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json
+Resumen: {'OK': 99, 'AVISO': 5}. Generado por código · commit 54720e5+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json

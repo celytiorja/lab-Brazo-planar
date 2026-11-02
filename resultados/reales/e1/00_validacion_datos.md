@@ -1,0 +1,110 @@
+# Validación automática de los datos crudos
+
+| archivo | chequeo | resultado | detalle |
+| --- | --- | --- | --- |
+| estatico_03 | existe el JSON de configuración | OK | estatico_03.json |
+| estatico_03 | columnas esperadas | OK | 19 columnas |
+| estatico_03 | sin valores vacíos (NaN) | OK | 0 vacíos |
+| estatico_03 | valores enteros (cuentas crudas) | OK | int |
+| estatico_03 | seq creciente | OK | 0 retrocesos |
+| estatico_03 | muestras perdidas (huecos en seq) | OK | 0 perdidas de 4074 (0.000 %) |
+| estatico_03 | timestamps monótonos (con desborde de micros) | OK | 0 no crecientes |
+| estatico_03 | fs real dentro de ±2 % | OK | 100.000 Hz (nominal 100) |
+| estatico_03 | jitter de Δt < 1000 µs | OK | σ(Δt) = 0.0 µs |
+| estatico_03 | desfase IMU2−IMU1 entre 0 y 5 ms | OK | media 520 µs |
+| estatico_03 | reposo ≥ 30 s | OK | 40.7 s |
+| estatico_03 | sin saturación (|cuentas| < 32760) | OK | ninguna |
+| estatico_03 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
+| estatico_03 | perfil/fase de reposo (0 / −1) | OK | perfiles {np.int64(0)} |
+| escalones_01 | existe el JSON de configuración | OK | escalones_01.json |
+| escalones_01 | columnas esperadas | OK | 19 columnas |
+| escalones_01 | sin valores vacíos (NaN) | OK | 0 vacíos |
+| escalones_01 | valores enteros (cuentas crudas) | OK | int |
+| escalones_01 | seq creciente | OK | 0 retrocesos |
+| escalones_01 | muestras perdidas (huecos en seq) | OK | 0 perdidas de 2600 (0.000 %) |
+| escalones_01 | timestamps monótonos (con desborde de micros) | OK | 0 no crecientes |
+| escalones_01 | fs real dentro de ±2 % | OK | 100.000 Hz (nominal 100) |
+| escalones_01 | jitter de Δt < 1000 µs | OK | σ(Δt) = 4.1 µs |
+| escalones_01 | desfase IMU2−IMU1 entre 0 y 5 ms | OK | media 536 µs |
+| escalones_01 | duración | OK | 26.0 s |
+| escalones_01 | sin saturación (|cuentas| < 32760) | AVISO | {'ay2': 4} |
+| escalones_01 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
+| escalones_01 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(1)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| escalones_01 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.78, 0.77 |
+| seno_lento_01 | existe el JSON de configuración | OK | seno_lento_01.json |
+| seno_lento_01 | columnas esperadas | OK | 19 columnas |
+| seno_lento_01 | sin valores vacíos (NaN) | OK | 0 vacíos |
+| seno_lento_01 | valores enteros (cuentas crudas) | OK | int |
+| seno_lento_01 | seq creciente | OK | 0 retrocesos |
+| seno_lento_01 | muestras perdidas (huecos en seq) | OK | 0 perdidas de 2600 (0.000 %) |
+| seno_lento_01 | timestamps monótonos (con desborde de micros) | OK | 0 no crecientes |
+| seno_lento_01 | fs real dentro de ±2 % | OK | 100.000 Hz (nominal 100) |
+| seno_lento_01 | jitter de Δt < 1000 µs | OK | σ(Δt) = 0.5 µs |
+| seno_lento_01 | desfase IMU2−IMU1 entre 0 y 5 ms | OK | media 529 µs |
+| seno_lento_01 | duración | OK | 26.0 s |
+| seno_lento_01 | sin saturación (|cuentas| < 32760) | OK | ninguna |
+| seno_lento_01 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
+| seno_lento_01 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(2)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_lento_01 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.93, 0.84 |
+| seno_rapido_01 | existe el JSON de configuración | OK | seno_rapido_01.json |
+| seno_rapido_01 | columnas esperadas | OK | 19 columnas |
+| seno_rapido_01 | sin valores vacíos (NaN) | OK | 0 vacíos |
+| seno_rapido_01 | valores enteros (cuentas crudas) | OK | int |
+| seno_rapido_01 | seq creciente | OK | 0 retrocesos |
+| seno_rapido_01 | muestras perdidas (huecos en seq) | OK | 0 perdidas de 1600 (0.000 %) |
+| seno_rapido_01 | timestamps monótonos (con desborde de micros) | OK | 0 no crecientes |
+| seno_rapido_01 | fs real dentro de ±2 % | OK | 100.000 Hz (nominal 100) |
+| seno_rapido_01 | jitter de Δt < 1000 µs | OK | σ(Δt) = 0.5 µs |
+| seno_rapido_01 | desfase IMU2−IMU1 entre 0 y 5 ms | OK | media 529 µs |
+| seno_rapido_01 | duración | OK | 16.0 s |
+| seno_rapido_01 | sin saturación (|cuentas| < 32760) | OK | ninguna |
+| seno_rapido_01 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
+| seno_rapido_01 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(3)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_rapido_01 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.91, 0.80 |
+| escalones_03 | existe el JSON de configuración | OK | escalones_03.json |
+| escalones_03 | columnas esperadas | OK | 19 columnas |
+| escalones_03 | sin valores vacíos (NaN) | OK | 0 vacíos |
+| escalones_03 | valores enteros (cuentas crudas) | OK | int |
+| escalones_03 | seq creciente | OK | 0 retrocesos |
+| escalones_03 | muestras perdidas (huecos en seq) | OK | 0 perdidas de 2600 (0.000 %) |
+| escalones_03 | timestamps monótonos (con desborde de micros) | OK | 0 no crecientes |
+| escalones_03 | fs real dentro de ±2 % | OK | 100.000 Hz (nominal 100) |
+| escalones_03 | jitter de Δt < 1000 µs | OK | σ(Δt) = 0.0 µs |
+| escalones_03 | desfase IMU2−IMU1 entre 0 y 5 ms | OK | media 520 µs |
+| escalones_03 | duración | OK | 26.0 s |
+| escalones_03 | sin saturación (|cuentas| < 32760) | AVISO | {'ay2': 7} |
+| escalones_03 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
+| escalones_03 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(1)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| escalones_03 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.89, 0.77 |
+| seno_lento_02 | existe el JSON de configuración | OK | seno_lento_02.json |
+| seno_lento_02 | columnas esperadas | OK | 19 columnas |
+| seno_lento_02 | sin valores vacíos (NaN) | OK | 0 vacíos |
+| seno_lento_02 | valores enteros (cuentas crudas) | OK | int |
+| seno_lento_02 | seq creciente | OK | 0 retrocesos |
+| seno_lento_02 | muestras perdidas (huecos en seq) | OK | 0 perdidas de 2600 (0.000 %) |
+| seno_lento_02 | timestamps monótonos (con desborde de micros) | OK | 0 no crecientes |
+| seno_lento_02 | fs real dentro de ±2 % | OK | 100.000 Hz (nominal 100) |
+| seno_lento_02 | jitter de Δt < 1000 µs | OK | σ(Δt) = 0.5 µs |
+| seno_lento_02 | desfase IMU2−IMU1 entre 0 y 5 ms | OK | media 530 µs |
+| seno_lento_02 | duración | OK | 26.0 s |
+| seno_lento_02 | sin saturación (|cuentas| < 32760) | OK | ninguna |
+| seno_lento_02 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
+| seno_lento_02 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(2)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_lento_02 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.93, 0.84 |
+| seno_rapido_02 | existe el JSON de configuración | OK | seno_rapido_02.json |
+| seno_rapido_02 | columnas esperadas | OK | 19 columnas |
+| seno_rapido_02 | sin valores vacíos (NaN) | OK | 0 vacíos |
+| seno_rapido_02 | valores enteros (cuentas crudas) | OK | int |
+| seno_rapido_02 | seq creciente | OK | 0 retrocesos |
+| seno_rapido_02 | muestras perdidas (huecos en seq) | OK | 0 perdidas de 1601 (0.000 %) |
+| seno_rapido_02 | timestamps monótonos (con desborde de micros) | OK | 0 no crecientes |
+| seno_rapido_02 | fs real dentro de ±2 % | OK | 100.000 Hz (nominal 100) |
+| seno_rapido_02 | jitter de Δt < 1000 µs | OK | σ(Δt) = 0.5 µs |
+| seno_rapido_02 | desfase IMU2−IMU1 entre 0 y 5 ms | OK | media 529 µs |
+| seno_rapido_02 | duración | OK | 16.0 s |
+| seno_rapido_02 | sin saturación (|cuentas| < 32760) | OK | ninguna |
+| seno_rapido_02 | ninguna IMU congelada (σ > 0 en cada canal) | OK | todos varían |
+| seno_rapido_02 | un solo perfil y fases 0→1→2 en orden | OK | perfiles {np.int64(3)}, fases [np.int64(0), np.int64(1), np.int64(2)] |
+| seno_rapido_02 | el brazo medido sigue a la consigna | OK | amplitud medida/consigna = 0.92, 0.80 |
+
+Resumen: {'OK': 102, 'AVISO': 2}. Generado por código · commit 54720e5+cambios_sin_commit · manifiesto datos/crudos/manifiesto.json

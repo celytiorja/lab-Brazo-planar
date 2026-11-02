@@ -1,0 +1,3 @@
+canal,ventanas_5s,varianza_total,varianza_min,varianza_max,cociente_max_min,media_min,media_max,levene_p,varianza_estacionaria
+w1,8,0.000891837,0.000831335,0.000936551,1.12656,0.252061,0.264305,0.829655,True
+w2,8,0.00106182,0.000979977,0.00117646,1.20049,-0.506901,-0.500916,0.71939,True

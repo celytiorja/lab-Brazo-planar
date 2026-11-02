@@ -25,6 +25,10 @@ TOLERANCIA_FS = 0.02          # fs real dentro de ±2 % de la nominal
 JITTER_MAX_US = 1000.0        # más que esto sugiere que el ESP32 se atrasa
 DURACION_MIN_ESTATICO_S = 30.0
 SATURACION = 32760            # cuentas: el int16 llega a ±32767
+# Coherencia consigna–medición: amplitud del ángulo MEDIDO (integración directa)
+# dividida por la amplitud de la CONSIGNA, durante el movimiento. Si el servo no
+# obedece (cable suelto, sin fuerza, trabado) la medición no se mueve: cociente ≈ 0.
+COHERENCIA_MIN, COHERENCIA_MAX = 0.6, 1.4
 CANALES_IMU = [f"{e}{i}" for i in (1, 2) for e in ("ax", "ay", "az", "gx", "gy", "gz")]
 
 
@@ -112,7 +116,35 @@ def validar_archivo(ruta, modo=None):
         ok = len(perfiles) == 1 and set(np.unique(fases)) <= {0, 1, 2} and bool(np.all(np.diff(fases) >= 0))
         filas.append(_fila(n, "un solo perfil y fases 0→1→2 en orden", ok,
                            f"perfiles {perfiles}, fases {sorted(set(np.unique(fases)))}"))
+        filas.append(_coherencia(ruta, n))
     return filas
+
+
+def _coherencia(ruta, n):
+    """¿El brazo MEDIDO por las IMU siguió a la CONSIGNA? (la consigna es un deseo)."""
+    from datos_imu import bias_reposo, cargar, theta_de_phi
+    from estimadores import IntegracionDirecta, ejecutar
+    reg = cargar(ruta)
+    mov = reg.fase == 1
+    if mov.sum() < 50:
+        return _fila(n, "el brazo medido sigue a la consigna", True, "sin fase de movimiento")
+    phi, _, _ = ejecutar(IntegracionDirecta(reg.phi_cmd[0], bias_reposo(reg)), reg)
+    th = theta_de_phi(phi)
+    cocientes = []
+    for j in (0, 1):
+        s_cmd = np.std(reg.theta_cmd[mov, j])
+        if s_cmd > 1.0:                          # esa articulación sí debía moverse
+            cocientes.append(np.std(th[mov, j]) / s_cmd)
+    ok = all(COHERENCIA_MIN <= c <= COHERENCIA_MAX for c in cocientes)
+    detalle = "amplitud medida/consigna = " + ", ".join(f"{c:.2f}" for c in cocientes)
+    if not ok:
+        detalle += " → alguna articulación NO obedeció (¿servo sin fuerza, cable, trabado?)"
+    return _fila(n, "el brazo medido sigue a la consigna", ok, detalle)
+
+
+def captura_valida(ruta, modo):
+    """True si la captura no tiene ningún chequeo en FALLA."""
+    return all(f["resultado"] != "FALLA" for f in validar_archivo(ruta, modo))
 
 
 def archivos_del_manifiesto(man):

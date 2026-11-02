@@ -1,0 +1,5 @@
+archivo,eslabon,perdidas,dt_max_ms,diferencia_final_deg,diferencia_max_deg
+estatico_03,1,0,10,4.98362e-15,5.80742e-15
+estatico_03,2,0,10,-3.94753e-15,3.94753e-15
+escalones_01,1,0,10.065,-0.000951406,0.00128395
+escalones_01,2,0,10.065,-0.00104391,0.00226683

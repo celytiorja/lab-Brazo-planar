@@ -127,6 +127,28 @@ def consistencia(reg, salida, m_dim):
     }
 
 
+def ruido_en_reposo_puro(reg_est, metodo):
+    """σ de ω estimada sobre la captura de REPOSO PURO (estatico_XX).
+
+    Aquí no hay ningún movimiento: lo único que sale es ruido del sensor
+    filtrado. En los reposos de los perfiles, en cambio, aún queda la cola del
+    último movimiento y la vibración de los servos, que mezclarían retraso y
+    ruido. Se ignora el primer segundo (convergencia de filtros y ventanas)."""
+    _, omega, _ = ejecutar(metodo, reg_est)
+    m = reg_est.t >= 1.0
+    return float(np.mean([np.std(omega[m, j], ddof=1) for j in (0, 1)]))
+
+
+def metodos_para_reposo(reg_est, R, usar_incl, est_bias, configs):
+    b = bias_reposo(reg_est)
+    phi0 = np.zeros(2)
+    m = [IntegracionDirecta(phi0, b)]
+    m += [MediaMovilIntegracion(phi0, b, N) for N in CK.VENTANAS_MEDIA_MOVIL]
+    m += [KalmanBrazo(phi0, b, R, c["q"], usar_incl, est_bias, nombre=f"Kalman {c['nombre']}")
+          for c in configs]
+    return m
+
+
 def ganancia_estacionaria(q, r, dt):
     """Para ω con solo giroscopio, Kalman se reduce a ω̂ ← ω̂ + K(z − ω̂): un filtro
     paso bajo de primer orden. Se itera la Riccati escalar hasta converger y se
@@ -185,16 +207,27 @@ def main():
                      "innovaciones son blancas. P debe ser simétrica (asimetría ≈ 0) y "
                      "positiva (autovalor mínimo > 0).\n\n" + nota)
 
+    # Ruido de cada método en el REPOSO PURO (archivo estático de la Entrega 1).
+    reg_est = cargar(Rp.ruta_dato(man["estatico"]))
+    ruido_est = {m.nombre: ruido_en_reposo_puro(reg_est, m)
+                 for m in metodos_para_reposo(reg_est, R, usar_incl, est_bias, configs)}
+    Rp.guardar_tabla(pd.DataFrame([{"metodo": k, "ruido_omega_reposo_puro_dps": v}
+                                   for k, v in ruido_est.items()]),
+                     sal, "ruido_reposo_puro", f"Ruido de ω en reposo puro ({reg_est.nombre})",
+                     "σ de la velocidad estimada con el brazo quieto (sin movimiento previo). "
+                     "Mide SOLO ruido, sin mezclar retraso.\n\n" + nota)
+
     # Regla de selección
     resumen = (df_aj[df_aj.metodo.str.startswith("Kalman")]
                .groupby("metodo")[["retraso_omega_ms", "ruido_omega_reposo_dps",
                                    "error_estacionario_rms_deg", "deriva_final_deg"]]
                .agg(lambda x: float(np.mean(np.abs(x)))).reset_index())
+    resumen.insert(2, "ruido_omega_reposo_puro_dps", resumen.metodo.map(ruido_est))
     validas = resumen[resumen.retraso_omega_ms <= CK.RETRASO_MAX_MS]
     if len(validas):
-        elegida = validas.sort_values("ruido_omega_reposo_dps").iloc[0]
-        motivo = (f"menor ruido de ω en reposo entre las configuraciones con retraso de ω "
-                  f"≤ {CK.RETRASO_MAX_MS} ms (promedio en registros de ajuste)")
+        elegida = validas.sort_values("ruido_omega_reposo_puro_dps").iloc[0]
+        motivo = (f"menor ruido de ω en reposo PURO ({reg_est.nombre}) entre las configuraciones "
+                  f"con retraso de ω ≤ {CK.RETRASO_MAX_MS} ms (retraso promedio en registros de ajuste)")
     else:
         elegida = resumen.sort_values("retraso_omega_ms").iloc[0]
         motivo = "ninguna cumple el retraso máximo: se toma la de menor retraso"
@@ -235,7 +268,8 @@ def main():
                          f"VALIDACIÓN: {cfg_elegida['nombre']} vs métodos base")
     graficar_diagnostico(salidas_aj, cfg_elegida, m_dim, sal, sint)
     graficar_aceleracion(salidas_aj, sal, sint)
-    graficar_compromiso(rutas_aj, R, usar_incl, est_bias, cfg_elegida, configs, sal, sint, nota)
+    graficar_compromiso(rutas_aj, reg_est, R, usar_incl, est_bias, cfg_elegida, configs, sal,
+                        sint, nota)
     print(f"Listo. Resultados en {sal}")
 
 
@@ -341,8 +375,15 @@ def graficar_aceleracion(salidas_aj, sal, sint):
     Rp.guardar_figura(fig, sal, "13_aceleracion_angular", sint)
 
 
-def graficar_compromiso(rutas_aj, R, usar_incl, est_bias, cfg, configs, sal, sint, nota):
-    """Barrido de q: cómo cambian ruido, retraso y ancho de banda con la relación Q/R."""
+def graficar_compromiso(rutas_aj, reg_est, R, usar_incl, est_bias, cfg, configs, sal, sint, nota):
+    """Barrido de q: cómo cambian ruido, retraso y ancho de banda con la relación Q/R.
+    Ruido: en el reposo puro. Retraso: en el movimiento de los registros de ajuste."""
+    dt_est = reg_est.dt[1:].mean()
+    ruido_puro = {}
+    for f_obj in CK.BARRIDO_F_CORTE_HZ:
+        q = CK.resolver_q({"f_corte_hz": f_obj}, R, dt_est)["q"]
+        kf = KalmanBrazo(np.zeros(2), bias_reposo(reg_est), R, q, usar_incl, est_bias)
+        ruido_puro[f_obj] = ruido_en_reposo_puro(reg_est, kf)
     filas = []
     for ruta in rutas_aj:
         reg = cargar(ruta)
@@ -359,16 +400,18 @@ def graficar_compromiso(rutas_aj, R, usar_incl, est_bias, cfg, configs, sal, sin
             filas.append({"archivo": reg.nombre, "f_objetivo_hz": f_obj, "q": q,
                           "q_dt_sobre_r": q * dt / R[0, 0],
                           "K_omega_estacionaria": k, "f_corte_hz": fc,
-                          "ruido_omega_reposo_dps": float(np.std(omega[reposo, 0], ddof=1)),
+                          "ruido_omega_reposo_puro_dps": ruido_puro[f_obj],
+                          "ruido_omega_reposo_perfil_dps": float(np.std(omega[reposo, 0], ddof=1)),
                           "retraso_omega_ms": Me.correlacion_cruzada(
                               (reg.w - b)[mov, 0], omega[mov, 0], fs, 0.3)[2] * 1e3})
     df = pd.DataFrame(filas)
     Rp.guardar_tabla(df, sal, "compromiso_Q_R", "Barrido de q (compromiso Q/R)", nota)
     g = df.groupby("f_objetivo_hz").mean(numeric_only=True).reset_index()
     fig, ax1 = plt.subplots(figsize=(9, 4.8))
-    ax1.loglog(g.q, g.ruido_omega_reposo_dps, "o-", color="tab:blue", label="ruido ω en reposo")
+    ax1.loglog(g.q, g.ruido_omega_reposo_puro_dps, "o-", color="tab:blue",
+               label="ruido ω en reposo puro")
     ax1.set_xlabel("q [°²/s³]  (R fijo, de la Entrega 1)")
-    ax1.set_ylabel("ruido ω en reposo [°/s]", color="tab:blue")
+    ax1.set_ylabel("ruido ω en reposo puro [°/s]", color="tab:blue")
     ax2 = ax1.twinx()
     ax2.semilogx(g.q, g.retraso_omega_ms, "s-", color="tab:red", label="retraso de ω")
     ax2.axhline(CK.RETRASO_MAX_MS, color="tab:red", ls=":", lw=1)

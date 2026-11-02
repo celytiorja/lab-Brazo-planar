@@ -1,4 +1,6 @@
 """Pruebas de la cadena de las Entregas 1 y 2 (Kalman, media móvil, datos)."""
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -134,3 +136,22 @@ def test_verificacion_cinematica_encuentra_offset(tmp_path):
     assert f["offset_estimado_theta2_deg"] == pytest.approx(-2.0, abs=1e-3)
     assert f["rmse_corrigiendo_offsets_mm"] < 1e-3
     assert f["repetibilidad_media_mm"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_coherencia_detecta_servo_que_no_obedece(tmp_path):
+    """Si un eslabón no se mueve aunque la consigna sí, la captura se rechaza."""
+    import json
+    import shutil
+
+    from validar_datos import captura_valida
+    origen = Path(__file__).resolve().parent.parent / "datos" / "sinteticos"
+    for ext in (".csv", ".json"):
+        shutil.copy(origen / f"escalones_01{ext}", tmp_path / f"escalones_01{ext}")
+    ruta = tmp_path / "escalones_01.csv"
+    assert captura_valida(ruta, "perfil")
+
+    d = pd.read_csv(ruta)
+    d["gz1"] = d["gz1"].iloc[:50].mean().round().astype(int)   # el hombro "no se mueve"
+    d["gz2"] = d["gz2"].iloc[:50].mean().round().astype(int)
+    d.to_csv(ruta, index=False)
+    assert not captura_valida(ruta, "perfil")

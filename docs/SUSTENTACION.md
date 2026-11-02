@@ -1,6 +1,55 @@
 # Guía rápida de sustentación
 
-## Lo que hay que decir con honestidad
+## ⭐ Ya hay DATOS REALES (2 de noviembre de 2026)
+
+Las secciones de abajo se escribieron cuando aún no había IMU. **Ahora todo se genera
+con mediciones reales**, en `resultados/reales/e1/` y `resultados/reales/e2/`:
+
+```
+python python/analisis_e1.py
+python python/analisis_e2.py
+```
+
+### Números clave (tus datos)
+
+| Qué | Valor | Archivo |
+|---|---|---|
+| Muestreo | 100,00 Hz, 0 muestras perdidas en todas las capturas válidas | `e1/00_validacion_datos.md` |
+| Ruido del giroscopio (reposo puro, `estatico_03`) | σ = 0,030 y 0,033 °/s | `e1/estadisticas_estatico.md` |
+| R | diagonal: 8,9·10⁻⁴ y 1,06·10⁻³ (°/s)², ρ = 0,00 | `e1/matriz_R.csv`, `e1/estructura_R.md` |
+| Deriva sin compensar el sesgo | +15,6 y −30,2 °/min | `e1/requisitos_kalman.md` |
+| Deriva compensada (fuera de muestra) | +0,56 y −0,10 °/min | idem |
+| Retraso consigna → brazo (servo) | ≈ 190 ms | `e1/correlacion_cruzada.md` |
+| Media móvil N = 5 / N = 21 | 20 / 98 ms de retraso (teoría: 20 / 100) | `e1/metricas_e1.md` |
+| Q elegida (con los registros de ajuste) | **Q_media**, f_c = 5 Hz, q = 0,0097 °²/s³ | `e2/resumen_seleccion_Q.md` |
+| Ruido de ω en reposo puro | directa 0,031 · MM5 0,017 · **Kalman 0,014** · MM21 0,009 °/s | `e2/ruido_reposo_puro.md` |
+| Retraso de ω (validación) | MM5 19,7 · **Kalman 17,3** · MM21 98 ms | `e2/metricas_e2_validacion_resumen.md` |
+| Ruido de α en reposo | directa 12,0 · **Kalman 3,3** °/s² (3,7× menos) | idem |
+| NIS de Kalman en reposo / en movimiento | ≈ 3,7 (seno rápido) / ~10⁵ | `e2/consistencia_kalman.md` |
+
+**Conclusión cuantitativa:** con el mismo retraso que la media móvil N = 5 (~18–20 ms),
+Kalman deja **menos ruido**. La media móvil N = 21 filtra más, pero llega **100 ms tarde**.
+**Ninguno corrige la deriva del ángulo**: el error final es igual en todos (~1,5°), porque
+con solo giroscopio la deriva no es observable.
+
+### Historias reales para contar (diagnóstico con datos)
+
+1. **Muestreo irregular en los senos (firmware 1.0 → 1.1 → 1.2).** `servo.write()` bloqueaba
+   ~15 ms y el muestreo bajó a 55 Hz. Con 2 núcleos subió a 97 Hz. La interrupción del I2C
+   seguía en el núcleo de los servos (lecturas de 39 ms). Con el I2C en el núcleo de muestreo:
+   100,00 Hz exactos. Evidencia: `datos/crudos/descartados/LEEME.md`.
+2. **El hombro no obedeció en `escalones_02`.** La consigna pidió 60° y 120°; las IMU midieron
+   90°. Rechazada automáticamente (amplitud medida/consigna = 0,47). **La consigna es un deseo,
+   no una medición.** Ver `rechazadas` en `datos/crudos/manifiesto.json`.
+3. **Dos de tres reposos no eran reposo** (Levene p ≈ 10⁻³⁶, ρ = 0,85 entre giros: un
+   movimiento físico común). El tercero es ruido puro (p = 0,77, ρ = 0,00) y es el que da R.
+4. **El brazo se movía al empezar el perfil** (venía de otra pose): se descarta el 1.er
+   segundo del reposo inicial. El error estacionario bajó de 49° a 5,8°.
+5. **R de reposo subestima el ruido en operación:** NIS ≫ 2 en movimiento (vibración del servo,
+   amplitud que el servo no alcanza). Es una limitación del modelo y de R, y propone R mayor en
+   movimiento o una referencia absoluta.
+
+## Lo que había que decir cuando aún no había IMU (histórico)
 
 **Las IMU no se lograron conectar físicamente.** Por eso:
 

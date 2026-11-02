@@ -1,0 +1,4 @@
+metodo,retraso_omega_ms,ruido_omega_reposo_puro_dps,ruido_omega_reposo_dps,error_estacionario_rms_deg,deriva_final_deg
+Kalman Q_alta,4.67198,0.0224656,0.486126,2.61905,3.3488
+Kalman Q_baja,55.2967,0.00847897,0.2633,2.62033,3.34977
+Kalman Q_media,17.5863,0.0144446,0.364723,2.6191,3.34938

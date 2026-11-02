@@ -1,0 +1,5 @@
+par,tipo,relacion_fisica,retraso_ms,coef_pico
+consigna θ1 → θ1 medido (integración),físico,el eslabón sigue a la consigna del servo (respuesta mecánica del servo),191.572,0.979267
+consigna θ2 → θ2 medido (integración),físico,el eslabón sigue a la consigna del servo (respuesta mecánica del servo),191.612,0.971074
+"w1 (IMU1) → w2 (IMU2), codo fijo",instrumental,"con el codo quieto ω2 = ω1: cualquier retraso es de la adquisición, no del brazo",27.1117,0.924276
+lectura IMU1 → IMU2 (timestamps t2 − t1),instrumental,las IMU se leen una tras otra por I2C,0.535571,

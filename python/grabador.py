@@ -92,22 +92,73 @@ class Grabacion:
         return self.ruta
 
 
+def reposo_estacionario(ruta_csv, alfa=0.05, ventanas=8):
+    """¿El ruido del giroscopio es estacionario (misma varianza en todo el archivo)?
+
+    Se divide el registro en `ventanas` tramos y se aplica la prueba de Levene a
+    w1 y w2: p > alfa en ambos = no hay evidencia de que la varianza cambie (ruido
+    de sensor puro). p muy pequeño = hubo movimientos o golpes durante el "reposo".
+    Devuelve (es_estacionario, [p1, p2]).
+    """
+    import numpy as np
+    from scipy.stats import levene
+    from datos_imu import cargar
+    reg = cargar(ruta_csv)
+    tramos = np.array_split(np.arange(reg.n), ventanas)
+    p = [float(levene(*[reg.w[t, i] for t in tramos]).pvalue) for i in (0, 1)]
+    return all(x > alfa for x in p), p
+
+
 def actualizar_manifiesto(carpeta=None):
     carpeta = carpeta or CARPETA
     def rel(nombre):
         return f"datos/crudos/{nombre}.csv"
 
-    def existe(nombre):
-        return (carpeta / f"{nombre}.csv").exists()
-
     estaticos = sorted(f.stem for f in carpeta.glob("estatico_*.csv"))
     escalones = sorted(f.stem for f in carpeta.glob("escalones_*.csv"))
+    # Reposo para R: el PRIMERO que pase la prueba de estacionariedad (criterio
+    # objetivo, fijado antes de mirar los resultados); si ninguno pasa, el primero.
+    elegido, criterio = (estaticos[0] if estaticos else None), "primer reposo (ninguno estacionario)"
+    pruebas = {}
+    for e in estaticos:
+        try:
+            ok, p = reposo_estacionario(carpeta / f"{e}.csv")
+        except Exception as error:          # p. ej. archivo incompleto
+            pruebas[e] = f"no evaluado: {error}"
+            continue
+        pruebas[e] = {"estacionario": ok, "levene_p": [float(f"{x:.3g}") for x in p]}
+        if ok:
+            elegido, criterio = e, "primer reposo estacionario (Levene p > 0.05 en w1 y w2)"
+            break
+    # Perfiles: se usan SOLO las repeticiones que pasan TODOS los chequeos de
+    # validar_datos (muestreo, pérdidas, y que el brazo haya seguido a la consigna).
+    # Ajuste = 1.ª repetición válida; validación = 2.ª válida (siempre distintas).
+    from validar_datos import validar_archivo
+    ajuste, validacion, rechazadas = [], [], {}
+    for nombre_perfil in C.PERFILES.values():
+        validas = []
+        for rep in sorted(f.stem for f in carpeta.glob(f"{nombre_perfil}_*.csv")):
+            fallas = [f"{f['chequeo']}: {f['detalle']}" for f in
+                      validar_archivo(carpeta / f"{rep}.csv", "perfil") if f["resultado"] == "FALLA"]
+            if fallas:
+                rechazadas[rep] = fallas
+            else:
+                validas.append(rep)
+        if len(validas) >= 1:
+            ajuste.append(rel(validas[0]))
+        if len(validas) >= 2:
+            validacion.append(rel(validas[1]))
+    escalones_validos = [r for r in escalones if r not in rechazadas]
     man = {"origen": "reales",
-           "estatico": rel(estaticos[0]) if estaticos else None,
-           "dinamico_e1": rel(escalones[0]) if escalones else None,
-           "ajuste": [rel(f"{p}_01") for p in C.PERFILES.values() if existe(f"{p}_01")],
-           "validacion": [rel(f"{p}_02") for p in C.PERFILES.values() if existe(f"{p}_02")],
-           "regla": "ajuste = repetición 01 de cada perfil; validación = repetición 02"}
+           "estatico": rel(elegido) if elegido else None,
+           "estatico_criterio": criterio,
+           "estatico_pruebas": pruebas,
+           "dinamico_e1": rel(escalones_validos[0]) if escalones_validos else None,
+           "ajuste": ajuste,
+           "validacion": validacion,
+           "rechazadas": rechazadas,
+           "regla": ("solo repeticiones que pasan validar_datos; ajuste = 1.ª válida de cada "
+                     "perfil, validación = 2.ª válida (archivos distintos)")}
     verif = Rp.RAIZ / "datos" / "verificacion_cinematica.csv"
     if verif.exists():
         man["verificacion_cinematica"] = "datos/verificacion_cinematica.csv"

@@ -2,16 +2,16 @@
 
 | archivo | metodo | nis_medio | nis_esperado | nis_medio_reposo | nis_medio_movimiento | frac_nis_en_95 | autocorr_innov_lag1 | banda_blancura_95 | max_asimetria_P | min_autovalor_P |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| escalones_01 | Kalman Q_baja | 8.53e+05 | 2 | 1.707 | 1.082e+06 | 0.6351 | 0.8952 | 0.03845 | 6.776e-20 | 0.0003198 |
-| escalones_01 | Kalman Q_media | 3.253e+05 | 2 | 1.508 | 4.124e+05 | 0.7725 | 0.766 | 0.03845 | 5.929e-20 | 0.0009564 |
-| escalones_01 | Kalman Q_alta | 9.107e+04 | 2 | 1.004 | 1.155e+05 | 0.8075 | 0.4663 | 0.03845 | 7.115e-20 | 0.002156 |
-| seno_lento_01 | Kalman Q_baja | 3.773e+04 | 2 | 12.48 | 4.664e+04 | 0.188 | 0.5247 | 0.03847 | 6.099e-20 | 0.0003198 |
-| seno_lento_01 | Kalman Q_media | 1.464e+04 | 2 | 1.718 | 1.81e+04 | 0.203 | -0.01076 | 0.03847 | 5.76e-20 | 0.0009562 |
-| seno_lento_01 | Kalman Q_alta | 8562 | 2 | 1.128 | 1.058e+04 | 0.2076 | -0.2964 | 0.03847 | 8.132e-20 | 0.002157 |
-| seno_rapido_01 | Kalman Q_baja | 6.521e+05 | 2 | 43.99 | 9.478e+05 | 0.3083 | 0.9782 | 0.04902 | 6.099e-20 | 0.0003198 |
-| seno_rapido_01 | Kalman Q_media | 8.65e+04 | 2 | 1.509 | 1.257e+05 | 0.3308 | 0.8517 | 0.04902 | 4.743e-20 | 0.0009563 |
-| seno_rapido_01 | Kalman Q_alta | 1.418e+04 | 2 | 1.026 | 2.061e+04 | 0.3358 | 0.4199 | 0.04902 | 2.88e-20 | 0.002156 |
+| escalones_01 | Kalman Q_baja | 8.875e+05 | 2 | 1.737 | 1.081e+06 | 0.6219 | 0.8952 | 0.03922 | 6.946e-20 | 0.0003198 |
+| escalones_01 | Kalman Q_media | 3.384e+05 | 2 | 1.54 | 4.122e+05 | 0.7665 | 0.766 | 0.03922 | 4.743e-20 | 0.0009564 |
+| escalones_01 | Kalman Q_alta | 9.475e+04 | 2 | 1.029 | 1.154e+05 | 0.8026 | 0.4663 | 0.03922 | 5.59e-20 | 0.002156 |
+| seno_lento_01 | Kalman Q_baja | 3.926e+04 | 2 | 15.22 | 4.666e+04 | 0.1551 | 0.5247 | 0.03924 | 4.743e-20 | 0.0003198 |
+| seno_lento_01 | Kalman Q_media | 1.524e+04 | 2 | 1.794 | 1.811e+04 | 0.1719 | -0.01076 | 0.03924 | 6.607e-20 | 0.0009562 |
+| seno_lento_01 | Kalman Q_alta | 8908 | 2 | 1.187 | 1.059e+04 | 0.1784 | -0.2964 | 0.03924 | 8.47e-20 | 0.002157 |
+| seno_rapido_01 | Kalman Q_baja | 6.956e+05 | 2 | 54.64 | 9.478e+05 | 0.2642 | 0.9782 | 0.05062 | 5.421e-20 | 0.0003198 |
+| seno_rapido_01 | Kalman Q_media | 9.227e+04 | 2 | 1.548 | 1.257e+05 | 0.2875 | 0.8517 | 0.05062 | 2.711e-20 | 0.0009563 |
+| seno_rapido_01 | Kalman Q_alta | 1.512e+04 | 2 | 1.057 | 2.061e+04 | 0.2942 | 0.4199 | 0.05062 | 3.558e-20 | 0.002156 |
 
 NIS = yᵀS⁻¹y ~ χ²(2) si el modelo es correcto: media ≈ 2 y ~95 % de las muestras dentro de la banda. autocorr_innov_lag1 ≈ 0 si las innovaciones son blancas. P debe ser simétrica (asimetría ≈ 0) y positiva (autovalor mínimo > 0).
 
-Generado por código · commit 103dfa9+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json
+Generado por código · commit 54720e5+cambios_sin_commit · manifiesto datos/sinteticos/manifiesto.json

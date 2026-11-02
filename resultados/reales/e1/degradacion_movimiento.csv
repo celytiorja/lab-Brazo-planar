@@ -1,0 +1,7 @@
+archivo,eslabon,ruido_aparente_reposo_dps,ruido_aparente_movimiento_dps,cociente_mov_reposo
+escalones_01,1,0.233031,3.47703,14.9209
+escalones_01,2,0.296678,12.2157,41.1749
+seno_lento_01,1,0.397464,3.16729,7.96874
+seno_lento_01,2,0.443871,6.60451,14.8793
+seno_rapido_01,1,0.030304,4.36394,144.005
+seno_rapido_01,2,0.0390702,9.56522,244.822

@@ -1,0 +1,7 @@
+metodo,ruido_omega_reposo_puro_dps
+Integración directa,0.0312313
+Media móvil N=5 + Euler,0.016545
+Media móvil N=21 + Euler,0.00857921
+Kalman Q_baja,0.00847897
+Kalman Q_media,0.0144446
+Kalman Q_alta,0.0224656

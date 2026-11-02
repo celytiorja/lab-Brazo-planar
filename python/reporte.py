@@ -17,6 +17,11 @@ def cargar_manifiesto(ruta=None):
     Por defecto usa los datos reales; si no existen, avisa."""
     if ruta is None:
         ruta = RAIZ / "datos" / "crudos" / "manifiesto.json"
+        if ruta.parent.exists():
+            # Datos reales: el manifiesto se REHACE con las reglas actuales antes de
+            # analizar, así nunca queda desactualizado aunque hubo cambios en Git.
+            import grabador
+            grabador.actualizar_manifiesto()
     else:
         ruta = Path(ruta)
         if not ruta.is_absolute():   # relativa a donde estés, o a la raíz del proyecto

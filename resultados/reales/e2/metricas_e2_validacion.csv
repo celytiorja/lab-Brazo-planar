@@ -1,0 +1,25 @@
+archivo,metodo,eslabon,ruido_omega_reposo_dps,retraso_omega_ms,retraso_theta_ms,error_estacionario_rms_deg,deriva_final_deg,ruido_alfa_reposo_dps2,t_calculo_us
+escalones_03,Integración directa,1,0.187573,0,0,1.53556,1.3246,11.564,6.31859
+escalones_03,Integración directa,2,0.195882,0,0,4.15155,0.967508,14.4419,6.31859
+escalones_03,Media móvil N=5 + Euler,1,0.149918,19.9995,19.0551,1.54225,1.32417,5.00797,20.3069
+escalones_03,Media móvil N=5 + Euler,2,0.149194,19.9999,19.7182,4.152,0.967364,5.24711,20.3069
+escalones_03,Media móvil N=21 + Euler,1,0.0835203,99.9986,98.7688,1.54572,1.32292,1.05357,19.9924
+escalones_03,Media móvil N=21 + Euler,2,0.0816832,99.9997,99.5607,4.14143,0.967083,1.09623,19.9924
+escalones_03,Kalman Q_media,1,0.133002,20.3272,3.79532,1.53667,1.32449,4.36591,84.7595
+escalones_03,Kalman Q_media,2,0.128712,18.6065,3.47376,4.15141,0.967474,4.4667,84.7595
+seno_lento_02,Integración directa,1,0.0356356,0,0,0.411376,-0.630174,4.55651,6.08798
+seno_lento_02,Integración directa,2,0.0447831,0,0,1.87095,1.86149,6.28619,6.08798
+seno_lento_02,Media móvil N=5 + Euler,1,0.0180434,19.828,18.802,0.411586,-0.665562,1.1249,13.0556
+seno_lento_02,Media móvil N=5 + Euler,2,0.0186551,19.969,19.492,1.8711,1.86851,1.35331,13.0556
+seno_lento_02,Media móvil N=21 + Euler,1,0.0083067,96.9788,98.6496,0.411934,-0.86027,0.232749,15.0109
+seno_lento_02,Media móvil N=21 + Euler,2,0.00916045,98.757,97.8086,1.8714,1.9444,0.295566,15.0109
+seno_lento_02,Kalman Q_media,1,0.0157074,14.8883,3.63659,0.411416,-0.639821,1.05967,62.4311
+seno_lento_02,Kalman Q_media,2,0.0163633,15.9844,3.70863,1.87095,1.86412,1.26203,62.4311
+seno_rapido_02,Integración directa,1,0.17938,0,0,0.0661788,-0.103816,14.6207,3.45384
+seno_rapido_02,Integración directa,2,0.202526,0,0,3.07559,3.9448,20.4958,3.45384
+seno_rapido_02,Media móvil N=5 + Euler,1,0.14354,18.4978,19.278,0.0671835,-0.170153,3.94982,11.9321
+seno_rapido_02,Media móvil N=5 + Euler,2,0.146853,19.8293,18.9965,3.07573,3.94465,4.88379,11.9321
+seno_rapido_02,Media móvil N=21 + Euler,1,0.107545,95.2954,97.4325,0.0697569,-0.5655,1.23926,15.0083
+seno_rapido_02,Media móvil N=21 + Euler,2,0.110053,98.3141,96.51,3.07663,3.9676,1.40682,15.0083
+seno_rapido_02,Kalman Q_media,1,0.134936,14.8226,4.3754,0.0663589,-0.122391,3.90417,59.1108
+seno_rapido_02,Kalman Q_media,2,0.136326,19.3266,3.92559,3.07567,3.94584,4.53192,59.1108

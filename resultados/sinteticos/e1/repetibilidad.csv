@@ -1,7 +1,7 @@
 perfil,eslabon,consigna_coincide_frac,rms_diferencia_entre_repeticiones_deg,error_estacionario_rep1_deg,error_estacionario_rep2_deg
-escalones,1,1,0.0761622,0.641042,0.614487
-escalones,2,1,0.126048,0.807124,0.900596
-seno_lento,1,1,0.126102,0.0919056,0.184532
-seno_lento,2,1,0.0689068,0.0426768,0.0199125
-seno_rapido,1,1,0.151758,0.158284,0.0182149
-seno_rapido,2,1,0.113567,0.308383,0.174976
+escalones,1,0.996397,0.508469,0.658651,0.647706
+escalones,2,0.996397,0.522486,0.867426,0.886306
+seno_lento,1,0.999599,0.112088,0.0988455,0.177862
+seno_lento,2,0.999599,0.0714881,0.0777406,0.0485533
+seno_rapido,1,1,0.160765,0.193574,0.00955142
+seno_rapido,2,1,0.119349,0.338491,0.1864

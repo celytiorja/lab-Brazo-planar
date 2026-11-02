@@ -1,6 +1,30 @@
 {
   "origen": "reales",
-  "estatico": "datos/crudos/estatico_01.csv",
+  "estatico": "datos/crudos/estatico_03.csv",
+  "estatico_criterio": "primer reposo estacionario (Levene p > 0.05 en w1 y w2)",
+  "estatico_pruebas": {
+    "estatico_01": {
+      "estacionario": false,
+      "levene_p": [
+        1.78e-36,
+        8.34e-43
+      ]
+    },
+    "estatico_02": {
+      "estacionario": false,
+      "levene_p": [
+        3.03e-29,
+        7.82e-31
+      ]
+    },
+    "estatico_03": {
+      "estacionario": true,
+      "levene_p": [
+        0.768,
+        0.886
+      ]
+    }
+  },
   "dinamico_e1": "datos/crudos/escalones_01.csv",
   "ajuste": [
     "datos/crudos/escalones_01.csv",
@@ -8,9 +32,14 @@
     "datos/crudos/seno_rapido_01.csv"
   ],
   "validacion": [
-    "datos/crudos/escalones_02.csv",
+    "datos/crudos/escalones_03.csv",
     "datos/crudos/seno_lento_02.csv",
     "datos/crudos/seno_rapido_02.csv"
   ],
-  "regla": "ajuste = repetici\u00f3n 01 de cada perfil; validaci\u00f3n = repetici\u00f3n 02"
+  "rechazadas": {
+    "escalones_02": [
+      "el brazo medido sigue a la consigna: amplitud medida/consigna = 0.47, 0.76 \u2192 alguna articulaci\u00f3n NO obedeci\u00f3 (\u00bfservo sin fuerza, cable, trabado?)"
+    ]
+  },
+  "regla": "solo repeticiones que pasan validar_datos; ajuste = 1.\u00aa v\u00e1lida de cada perfil, validaci\u00f3n = 2.\u00aa v\u00e1lida (archivos distintos)"
 }

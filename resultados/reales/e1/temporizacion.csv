@@ -1,0 +1,3 @@
+archivo,muestras,duracion_s,fs_real_hz,dt_medio_ms,dt_desv_us,dt_min_ms,dt_max_ms,perdidas,desfase_imu2_imu1_us,llegada_pc_jitter_ms
+estatico_03,4074,40.73,100,10,1.86626e-09,10,10,0,520,101.647
+escalones_01,2499,24.98,100,10,4.01787,9.94,10.065,0,535.571,78.4641
