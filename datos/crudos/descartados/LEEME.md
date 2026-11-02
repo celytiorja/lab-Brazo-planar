@@ -39,3 +39,8 @@ servos; cuando `servo.write()` lo ocupaba, la lectura en el núcleo 0 esperaba.
 
 **Solución** (firmware `adquisicion-1.2`): `Wire.begin()` e inicialización de
 las IMU se hacen dentro de la tarea de muestreo (núcleo 0).
+
+Repetición con el mismo firmware 1.1 (2026-11-02): `seno_lento_02_fw1.1`
+(96.4 Hz, 94 perdidas, t2 − t1 máx 39 287 µs) y `seno_rapido_02_fw1.1`
+(98.6 Hz, 23 perdidas, máx 39 355 µs). El mismo patrón confirma que la causa
+es sistemática (no un accidente de una captura).

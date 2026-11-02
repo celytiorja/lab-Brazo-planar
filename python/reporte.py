@@ -101,5 +101,9 @@ def guardar_json(datos, carpeta, nombre):
 
 
 def encabezado(manifiesto):
-    return (f"Generado por código · commit {commit_actual()} · "
-            f"manifiesto {Path(manifiesto['_ruta']).resolve().relative_to(RAIZ).as_posix()}")
+    ruta = Path(manifiesto["_ruta"]).resolve()
+    try:
+        ruta = ruta.relative_to(RAIZ)        # ruta corta si está dentro del proyecto
+    except ValueError:
+        pass
+    return f"Generado por código · commit {commit_actual()} · manifiesto {ruta.as_posix()}"
