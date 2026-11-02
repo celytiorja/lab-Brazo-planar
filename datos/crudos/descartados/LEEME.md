@@ -23,3 +23,19 @@ En los escalones (una escritura cada 2 s) el muestreo salió perfecto (100.00 Hz
 **Solución** (firmware `adquisicion-1.1`): la lectura de las IMU corre en una
 tarea propia en el núcleo 0 del ESP32 con período fijo (`vTaskDelayUntil`), y
 los servos se escriben como máximo cada 20 ms desde el núcleo 1.
+
+## Segunda iteración: firmware 1.1 (`*_fw1.1`)
+
+| Archivo | fs real | Δt mín–máx | Muestras perdidas | Lectura I2C de IMU1 (t2 − t1) |
+|---|---|---|---|---|
+| `seno_lento_01_fw1.1` | 96.6 Hz | 1.1–39.8 ms | 89 | mediana 520 µs, **máx 39 286 µs** |
+| `seno_rapido_01_fw1.1` | 99.1 Hz | 1.1–39.8 ms | 14 | mediana 520 µs, **máx 39 286 µs** |
+
+Mejoró mucho (de ~55 Hz a ~97–99 Hz), pero la propia lectura I2C seguía tardando
+hasta 40 ms SOLO en la fase de movimiento de los senos (en `escalones_02`, con la
+misma versión, el máximo fue 522 µs). Causa: `Wire.begin()` se llamaba en
+`setup()` (núcleo 1), así que la interrupción del I2C quedaba en el núcleo de los
+servos; cuando `servo.write()` lo ocupaba, la lectura en el núcleo 0 esperaba.
+
+**Solución** (firmware `adquisicion-1.2`): `Wire.begin()` e inicialización de
+las IMU se hacen dentro de la tarea de muestreo (núcleo 0).

@@ -17,6 +17,12 @@
       y envío por USB de lo que haya en la cola.
   Así, aunque un servo se bloquee, la medición no se entera.
 
+  v1.2: con la v1.1 aún había lecturas I2C de hasta 40 ms en los senos. Causa:
+  Wire.begin() instala la interrupción del I2C en el núcleo DONDE SE LLAMA, y se
+  llamaba en setup() (núcleo 1, el de los servos). Si ese núcleo se bloqueaba,
+  nadie atendía al I2C. Ahora el I2C se inicia DENTRO de la tarea de muestreo
+  (núcleo 0): toda la cadena de medición vive en su propio núcleo.
+
   Monitor Serie / Python: 460800 baudios, fin de línea "Nueva línea".
   ¿Por qué 460800 y no 115200? Cada línea tiene ~115 caracteres y se envían 100
   por segundo = 11 500 caracteres/s. A 115200 baudios caben como máximo ~11 520/s:
@@ -40,7 +46,7 @@
 #include <Wire.h>
 #include <ESP32Servo.h>
 
-const char *VERSION = "adquisicion-1.1";
+const char *VERSION = "adquisicion-1.2";
 
 // ---------- Pines (ver docs/02_conexiones.md) ----------
 const int PIN_SERVO_HOMBRO = 25;
@@ -79,6 +85,7 @@ volatile int fase = -1;           // -1 manual, 0 reposo inicial, 1 movimiento, 
 volatile int cmdH = 90, cmdC = 90; // lo ÚLTIMO que se escribió a cada servo
 uint32_t t0Perfil = 0;
 bool imu1Ok = false, imu2Ok = false;
+volatile bool imusListas = false;   // la tarea de muestreo terminó de iniciar el I2C
 String entrada = "";
 
 // Pedido de posición (puede llegar más rápido de lo que conviene escribir al servo).
@@ -275,6 +282,13 @@ void leerOrdenes() {
 // NÚCLEO 0: tarea de muestreo (solo IMU, ritmo exacto)
 // =====================================================================
 void tareaMuestreo(void *) {
+  // El I2C se inicia AQUÍ (núcleo 0) para que su interrupción quede en este núcleo.
+  Wire.begin(PIN_SDA, PIN_SCL);
+  Wire.setClock(400000);
+  imu1Ok = iniciarIMU(IMU1);
+  imu2Ok = iniciarIMU(IMU2);
+  imusListas = true;
+
   uint32_t seq = 0;
   TickType_t ultimo = xTaskGetTickCount();
   for (;;) {
@@ -342,11 +356,6 @@ void setup() {
   Serial.begin(BAUDIOS);
   delay(300);
 
-  Wire.begin(PIN_SDA, PIN_SCL);
-  Wire.setClock(400000);
-  imu1Ok = iniciarIMU(IMU1);
-  imu2Ok = iniciarIMU(IMU2);
-
   servoHombro.setPeriodHertz(50);
   servoCodo.setPeriodHertz(50);
   servoHombro.attach(PIN_SERVO_HOMBRO, PULSO_MIN_US, PULSO_MAX_US);
@@ -354,14 +363,14 @@ void setup() {
   servoHombro.write(cmdH);
   servoCodo.write(cmdC);
 
-  imprimirConfiguracion();
-
-  // Desde aquí el bus I2C lo usa SOLO la tarea de muestreo.
+  // El bus I2C lo inicia y lo usa SOLO la tarea de muestreo (núcleo 0).
   cola = xQueueCreate(64, sizeof(Muestra));
   xTaskCreatePinnedToCore(tareaMuestreo, "muestreo", 4096, NULL,
                           3,     // prioridad alta: que nada la interrumpa
                           NULL,
                           0);    // núcleo 0 (loop() corre en el núcleo 1)
+  while (!imusListas) delay(5);   // esperar a que la tarea inicie las IMU
+  imprimirConfiguracion();
 }
 
 void loop() {

@@ -3,9 +3,7 @@
   "estatico": "datos/crudos/estatico_01.csv",
   "dinamico_e1": "datos/crudos/escalones_01.csv",
   "ajuste": [
-    "datos/crudos/escalones_01.csv",
-    "datos/crudos/seno_lento_01.csv",
-    "datos/crudos/seno_rapido_01.csv"
+    "datos/crudos/escalones_01.csv"
   ],
   "validacion": [
     "datos/crudos/escalones_02.csv"
