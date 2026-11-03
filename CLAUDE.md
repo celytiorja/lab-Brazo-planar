@@ -1,6 +1,6 @@
 # Notas para Claude (leer SIEMPRE completo al iniciar)
 
-Última actualización: 2026-11-03 (ArUco). Rama de trabajo: `claude/friendly-feynman-xfljpf`
+Última actualización: 2026-11-03 (ArUco, video sin retraso, análisis E8). Rama de trabajo: `claude/friendly-feynman-xfljpf`
 (repo `celytiorja/lab-Brazo-planar`, es la única rama; el usuario también hace commits
 en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autoría.
 
@@ -124,10 +124,20 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   esquinas sub-píxel; DetectorColor = respaldo HSV con clic), `generar_marcadores.py`
   (crea `docs/marcadores_aruco.pdf`, 6 cm + repuestos de 4 cm, regla de 10 cm; imprime el
   patrón para dibujarlo a mano), `kalman_camara.py` (estado [θ1, ω1, θ2, ω2], H mide θ, q = r·(2π f_n)^4 con
-  f_n 1.5/3/6 Hz, predice si no ve), `config_camara.py`.
+  f_n 1.5/3/6 Hz, predice si no ve; **medición parcial**: NaN en θ2 → H solo con la fila
+  de θ1; tras PREDICCION_LIBRE_S 0.2 s sin medir, la ω se frena con τ 0.15 s),
+  `config_camara.py`, `video_rapido.py` (LectorVideo: hilo que guarda solo el cuadro más
+  nuevo; para http lee el MJPEG directo con urllib buscando FFD8/FFD9 y decodifica solo el
+  que se usa; respaldo cv2 con nobuffer; archivos a velocidad real), `analisis_teleop.py`
+  (E8; se ejecuta y sube solo al salir con Q si hubo sesiones), `simular_teleop.py` (video
+  sintético con verdad, temblor 9 Hz, JPEG, desenfoque, 2 oclusiones; procesa el MISMO
+  video con crudo y Kalman; simula robot con retraso 120 ms + τ 70 ms y giroscopio),
+  `prueba_latencia_video.py` (DroidCam falso: antes 75→2205 ms, ahora 15→17 ms).
+  vision.DetectorAruco también **sigue por cercanía** candidatos rechazados (desenfoque) hasta
+  8 cuadros (`ARUCO_SEGUIR_*`).
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **28 pasan**.
+- Pruebas: `python -m pytest python/` → **30 pasan**.
 - Docs: `docs/00_git…`, `01_cinematica`, `02_conexiones`, `03_interfaz`,
   `04_captura_y_entregas`, `05_teleoperacion_camara`, `ENTREGAS`, `SUSTENTACION`;
   `datos/DICCIONARIO.md`; `datos/crudos/descartados/LEEME.md`.
@@ -159,7 +169,7 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
     no alcanza la amplitud en los senos rápidos): limitación de R de reposo.
   - Aviso: el acelerómetro ay2 satura unas pocas muestras en los arranques de escalones.
 
-## 7. Teleoperación (Entrega 2) — EN CURSO
+## 7. Teleoperación (Entrega 2) — código listo, faltan las sesiones reales
 
 - Decisión (2026-11-02): **opción 1 = solo cámara del teléfono** (DroidCam), el maestro es
   el brazo del usuario, vista desde ARRIBA de la mesa; IMU siguen en el robot. Opción 2
@@ -176,16 +186,25 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   ArUco, L colores (solo `--modo color`: clic hombro, codo, muñeca), C pose de referencia (brazo estirado al frente = (90, 0)),
   N medir R de la cámara (10 s quieto), F crudo↔Kalman, 1/2/3 Q, G grabar (datos/teleop,
   se sube solo), Q salir.
-- Estado: con colores corrió en vivo pero el hombro azul claro fallaba. ArUco probado solo
-  con imágenes sintéticas (incluida la hoja impresa reducida a ~44 px, oscura y borrosa).
-  SIGUIENTE: el usuario imprime la hoja, pega los cuadros, corre el programa y confirma
-  `aruco: hombro:si codo:si muneca:si`; luego C, N; luego con robot; luego grabar sesiones (tabla en
-  docs/05: crudo vs Kalman lento/rápido + oclusión) y escribir `analisis_teleop.py`
-  (suavidad de órdenes, retraso Kalman vs crudo, tiempo de cómputo, latencia).
+- 2026-11-03 (noche antes de entregar E2): el usuario reportó que con la cámara real el
+  programa era **muy lento y se trababa** → causa: cv2.VideoCapture acumulaba cuadros (retraso
+  creciente) + WiFi lenta. Arreglado con `video_rapido.py`; se recomienda el **hotspot del
+  teléfono** (la IP de DroidCam cambia). No alcanzó a imprimir los ArUco: imprime y entrega
+  el mismo día. Se dejó TODO listo para una prueba de 10 min: **`docs/PRUEBA_FINAL.md`**
+  (protocolo: C, N, R; sesión 1 F=crudo y sesión 2 F=Kalman, 30 s cada una con guía en
+  pantalla: lento/rápido/tapar muñeca; Q analiza y sube; luego `git tag entrega2`).
+- Sesiones: `datos/teleop/sesion_XX.csv` (t_s, visto, solo_theta1, hombro_memoria, θ crudo y
+  kf, ω kf, fuente, enviando, cmd, enviado, t_calc_kf_us, t_proc_ms, t_espera_ms) +
+  `sesion_XX_robot.csv` (giroscopio del robot a 100 Hz; teleop manda "s 1" al conectar).
+- Sintético (resultados/sinteticos/teleop): aspereza θ1 0.81→0.71, θ2 1.88→1.40 (mismos
+  cuadros); error θ1 en oclusión 19°→0.27° (medición parcial); Kalman ~0.2 ms, detección +
+  Kalman ~3.5 ms (10 % de 33 ms); retraso orden→robot ≈ 175 ms recuperado del giroscopio.
+  El retraso Kalman vs crudo sale ≈ 0 ms (modelo de velocidad: tipo 2, sigue rampas).
+- SIGUIENTE: que el usuario corra la prueba real y revisar `resultados/reales/teleop/`.
 
 ## 8. Pendientes (en orden)
 
-1. Teleoperación con cámara funcionando + sesiones grabadas + análisis (E8, C2).
+1. Grabar las 2 sesiones reales de teleoperación con `docs/PRUEBA_FINAL.md` (E8, C2).
 2. Verificación de la cinemática en papel milimetrado (`verificacion_cinematica.py
    --plantilla`, docs/04 §4b): punto 1 de E1 y referencia independiente de E2.
 3. Practicar las preguntas de comprobación individual (docs/ENTREGAS.md).

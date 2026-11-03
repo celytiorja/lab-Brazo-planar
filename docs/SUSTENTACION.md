@@ -49,6 +49,22 @@ con solo giroscopio la deriva no es observable.
    amplitud que el servo no alcanza). Es una limitación del modelo y de R, y propone R mayor en
    movimiento o una referencia absoluta.
 
+## ⭐ Teleoperación con cámara (E8): ver `docs/PRUEBA_FINAL.md`
+
+- **Cadena:** teléfono (DroidCam) → PC (ArUco → θ1, θ2 → Kalman) → ESP32 → servos. Las IMU del
+  robot miden lo que el robot hizo de verdad.
+- **Por qué ArUco y no colores:** el azul claro se perdía con la luz. El blanco y negro se
+  distingue con cualquier luz, cada cuadro dice su número y sus 4 esquinas dan un centro preciso.
+- **Por qué "se trababa":** OpenCV acumulaba cuadros en una fila y el retraso pasaba de 2 s.
+  Ahora siempre se usa el más nuevo: unos 17 ms (`python/prueba_latencia_video.py`).
+- **Kalman aquí:**
+  - Estado [θ1, ω1, θ2, ω2], H mide θ y R es la varianza medida con el brazo quieto (tecla N).
+  - Q sale de la frecuencia natural f_n: q = r·(2π f_n)⁴.
+  - **Medición parcial:** si la mano tapa la muñeca, H se queda con la fila de θ1. θ1 sigue
+    medido y θ2 se predice.
+  - En simulación, el error de θ1 durante la oclusión baja de 19° (cámara congelada) a 0,3°.
+- **Los números reales** se leen de `resultados/reales/teleop/resumen_teleop.md`.
+
 ## Lo que había que decir cuando aún no había IMU (histórico)
 
 **Las IMU no se lograron conectar físicamente.** Por eso:

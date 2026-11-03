@@ -149,6 +149,8 @@ def analizar_sesion(ruta):
            "fps": (len(t) - 1) / (t[-1] - t[0]), "dt_medio_ms": dt.mean() * 1e3,
            "dt_std_ms": dt.std() * 1e3, "dt_max_ms": dt.max() * 1e3,
            "visto_pct": 100 * visto.mean()}
+    if "solo_theta1" in df:
+        res["solo_theta1_pct"] = 100 * df["solo_theta1"].mean()
     if "hombro_memoria" in df:
         res["hombro_memoria_pct"] = 100 * df["hombro_memoria"].mean()
     huecos = [(a, b) for a, b in tramos(~visto) if a > 0]      # sin el arranque
@@ -325,7 +327,9 @@ def _guardar_resumen(tabla, salida, nota_sint):
               f"- Duración {r['duracion_s']:.1f} s, {r['cuadros']} cuadros, **{r['fps']:.1f} fps** "
               f"(Δt = {r['dt_medio_ms']:.1f} ± {r['dt_std_ms']:.1f} ms, máx {r['dt_max_ms']:.0f} ms).",
               f"- La cámara vio los 3 marcadores en el **{r['visto_pct']:.1f} %** de los cuadros; "
-              f"{int(r['oclusiones'])} oclusiones, la más larga de {r['oclusion_max_ms']:.0f} ms.", "",
+              f"{int(r['oclusiones'])} oclusiones, la más larga de {r['oclusion_max_ms']:.0f} ms"
+              + (f"; en el {r['solo_theta1_pct']:.1f} % de los cuadros solo se vio θ1 (muñeca tapada: "
+                 f"Kalman actualizó solo θ1 y predijo θ2)." if r.get("solo_theta1_pct", 0) > 0 else "."), "",
               "| Métrica | Crudo (cámara) | Kalman |", "|---|---|---|",
               f"| Aspereza θ1 [°] (RMS 2.ª diferencia, mismos cuadros) | {_fmt(r['aspereza_theta1_crudo'], 3)} | "
               f"{_fmt(r['aspereza_theta1_kf'], 3)} |",

@@ -102,3 +102,15 @@ def test_lector_video_no_acumula_retraso():
     assert len(edades) > 20
     assert edades[-10:].mean() < 80            # con OpenCV aquí ya serían cientos de ms
     assert lector.descartados > 0               # botó los viejos
+
+
+def test_kalman_camara_medicion_parcial_corrige_solo_theta1():
+    """Muñeca tapada: θ1 se sigue midiendo (H con una sola fila), θ2 solo se predice."""
+    kf = KalmanCamara([90, 30], r_camara=0.5, f_n_hz=3.0)
+    dt = 1 / 30
+    for _ in range(30):
+        kf.paso(dt, (90.0, 30.0))
+    for _ in range(30):                         # 1 s: θ1 salta a 100, la muñeca no se ve
+        th, _ = kf.paso(dt, (100.0, np.nan))
+    assert th[0] == pytest.approx(100, abs=0.5)  # θ1 corregido por la cámara
+    assert th[1] == pytest.approx(30, abs=1.0)   # θ2 se quedó donde estaba

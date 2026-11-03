@@ -102,15 +102,32 @@ python python/teleop_camara.py --video http://192.168.1.23:4747/video --puerto C
 ## 6. Grabar sesiones para la evidencia (E8 y C2)
 
 **G** inicia y detiene la grabación. Queda en `datos/teleop/sesion_XX.csv` y **se sube sola a
-GitHub**. Para comparar crudo contra Kalman en las mismas condiciones:
+GitHub**. Al salir (Q), `analisis_teleop.py` analiza todas las sesiones y sube los resultados.
 
-| Sesión | Fuente (F) | Q | Movimiento |
-|---|---|---|---|
-| 1 | crudo | — | el mismo movimiento lento, 20 s |
-| 2 | Kalman | Q_media | el mismo movimiento lento, 20 s |
-| 3 | crudo | — | movimiento rápido, 20 s |
-| 4 | Kalman | Q_media | movimiento rápido, 20 s |
-| 5 | Kalman | — | tapa la muñeca con la otra mano 1–2 s (oclusión) |
+Crudo y Kalman se calculan **siempre los dos**, en cada cuadro. La comparación de ángulos se hace
+en los mismos cuadros y no hacen falta sesiones aparte. Lo que sí cambia según **F** es qué mueve
+al robot. Por eso se graban dos sesiones con el mismo protocolo (la pantalla guía los tiempos):
+
+| Sesión | F (mueve al robot) | 0–10 s | 10–20 s | 20–30 s |
+|---|---|---|---|---|
+| 1 | crudo | lento | rápido | tapa la muñeca 2 veces |
+| 2 | Kalman | lento | rápido | tapa la muñeca 2 veces |
+
+Paso a paso: `docs/PRUEBA_FINAL.md`.
+
+## 6b. Por qué ya no "se traba" (latencia)
+
+OpenCV guardaba los cuadros en una fila. Si el programa tardaba un poco, cada cuadro mostrado era
+más viejo que el anterior y el retraso crecía hasta varios segundos. `python/video_rapido.py` lee
+el video en un hilo aparte, se queda solo con el cuadro más nuevo y bota los viejos sin
+decodificarlos. `python python/prueba_latencia_video.py` lo mide con un DroidCam falso:
+
+| | edad del cuadro al inicio | después de 8 s |
+|---|---|---|
+| `cv2.VideoCapture` (antes) | 75 ms | **2205 ms** (crece sin parar) |
+| `LectorVideo` (ahora) | 15 ms | **17 ms** |
+
+Lo que el código no arregla es la WiFi: usa el **hotspot del teléfono** (ping de pocos ms).
 
 ## 7. Qué decir (por qué Kalman ayuda aquí)
 
@@ -118,6 +135,9 @@ GitHub**. Para comparar crudo contra Kalman en las mismas condiciones:
   real de cada cuadro y entrega movimientos **más suaves** al servo.
 - **Si un marcador se tapa**, la cámara cruda se queda congelada. Kalman **sigue
   prediciendo** con su modelo (velocidad casi constante) hasta que vuelve a verlo.
+  - Si solo se tapa la muñeca, θ1 se sigue midiendo: H se queda con su fila (**medición
+    parcial**) y solo θ2 se predice.
+  - Si la oclusión es larga, la velocidad estimada se frena para que el robot no siga de largo.
 - **No hay deriva**: la cámara mide el ángulo directamente. Es el complemento perfecto de las
   IMU, que no tiemblan pero derivan. **Fusionarlas** (cámara + giroscopios en tu brazo) es el
   paso siguiente; el código ya está preparado (`python/kalman_camara.py`).

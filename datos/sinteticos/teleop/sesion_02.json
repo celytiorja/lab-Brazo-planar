@@ -1,10 +1,10 @@
 {
-  "fecha": "2026-11-03T01:28:02",
+  "fecha": "2026-11-03T01:31:44",
   "r_camara": [
     0.0764378796842431,
     0.07688922393409109
   ],
-  "origen_r": "medido 2026-11-03T01:28:02",
+  "origen_r": "medido 2026-11-03T01:31:44",
   "configs_q": [
     {
       "nombre": "Q_baja",
@@ -30,7 +30,7 @@
   "modo_deteccion": "aruco",
   "periodo_ordenes_s": 0.04,
   "cambio_min_grados": 1,
-  "commit": "fa0137a+cambios_sin_commit",
+  "commit": "019d796+cambios_sin_commit",
   "cuadros": 900,
   "muestras_robot": 0,
   "SINTETICO": "Video generado por simular_teleop.py: NO es una medición."

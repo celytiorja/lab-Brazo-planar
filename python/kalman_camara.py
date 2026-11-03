@@ -11,6 +11,9 @@ Diferencias con el Kalman de los giroscopios:
   - Llega a ~30 cuadros/s con Δt irregular: se usa el Δt real de cada cuadro.
   - Si en un cuadro no se ve un marcador, se hace SOLO la predicción: el filtro
     sigue estimando con su modelo en vez de congelarse.
+  - Si se ve solo PARTE del brazo (p. ej. la mano tapa la muñeca, pero hombro y codo se
+    ven), se actualiza SOLO con lo que se ve: H se queda con la fila de θ1. θ1 sigue
+    corregido por la cámara y θ2 lo predice el modelo. (Medición parcial = H parcial.)
   - Pero "velocidad constante" solo es creíble un rato: tu brazo frena. Si la oclusión
     dura más de PREDICCION_LIBRE_S, la velocidad estimada se va apagando (constante de
     tiempo FRENADO_TAU_S): el robot se detiene suavemente en vez de seguir de largo.
@@ -47,7 +50,7 @@ class KalmanCamara:
         p0 = [CC.P0_DIAG["theta"], CC.P0_DIAG["omega"]] * 2
         self.kf = FiltroKalman([theta0[0], 0.0, theta0[1], 0.0], np.diag(p0))
         self.ultima_innovacion = None
-        self.t_sin_medir = 0.0
+        self.t_sin_medir = np.zeros(2)          # por articulación
 
     def _FQ(self, dt):
         F = np.zeros((4, 4))
@@ -59,22 +62,24 @@ class KalmanCamara:
         return F, Q
 
     def paso(self, dt, theta_medido=None):
-        """Un cuadro. theta_medido = (θ1, θ2) o None si no se vio el brazo."""
+        """Un cuadro. theta_medido = (θ1, θ2), con NaN en lo que no se vio, o None."""
         F, Q = self._FQ(dt)
         self.kf.predecir(F, Q)
-        if theta_medido is None:
-            self.t_sin_medir += dt
-            if self.t_sin_medir > CC.PREDICCION_LIBRE_S:
-                frenar = math.exp(-dt / CC.FRENADO_TAU_S)
-                self.kf.x[1] *= frenar
-                self.kf.x[3] *= frenar
-        else:
-            self.t_sin_medir = 0.0
-            z = np.asarray(theta_medido, float)
+        z = np.full(2, np.nan) if theta_medido is None else np.asarray(theta_medido, float)
+        visto = np.isfinite(z)
+        # Oclusión larga de una articulación: su velocidad se va apagando.
+        self.t_sin_medir = np.where(visto, 0.0, self.t_sin_medir + dt)
+        frenar = math.exp(-dt / CC.FRENADO_TAU_S)
+        for j in range(2):
+            if self.t_sin_medir[j] > CC.PREDICCION_LIBRE_S:
+                self.kf.x[2 * j + 1] *= frenar
+        if visto.any():
+            H = H_CAMARA[visto]                     # solo las filas de lo que se ve
+            R = self.R[np.ix_(visto, visto)]
+            pred = H @ self.kf.x
             # El ángulo es circular: la innovación se lleva a (−180, 180].
-            pred = H_CAMARA @ self.kf.x
-            z = pred + (z - pred + 180) % 360 - 180
-            d = self.kf.actualizar(z, H_CAMARA, self.R)
+            zz = pred + (z[visto] - pred + 180) % 360 - 180
+            d = self.kf.actualizar(zz, H, R)
             self.ultima_innovacion = d["innovacion"]
         x = self.kf.x
         return np.array([x[0], x[2]]), np.array([x[1], x[3]])

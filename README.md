@@ -18,6 +18,7 @@ docs/
   05_teleoperacion_camara.md     ← el robot copia tu brazo (cámara del teléfono)
   SUSTENTACION.md                ← qué mostrar y qué decir
   ENTREGAS.md                    ← localizadores E1–E9 y respuestas de comprobación individual
+  PRUEBA_FINAL.md                ← ⭐ los 10 minutos antes de entregar la E2 (teleoperación)
 firmware/
   prueba_servos/                 ← sketch para probar solo los dos servos
   prueba_hardware/               ← sketch para probar servos + IMU juntos
@@ -32,6 +33,10 @@ python/
   interfaz_imu.py                ← interfaz con las IMU en vivo y grabación de capturas
   teleop_camara.py               ← teleoperación con cámara + Kalman (vision.py, kalman_camara.py)
   generar_marcadores.py          ← hoja de cuadros ArUco para imprimir (docs/marcadores_aruco.pdf)
+  video_rapido.py                ← lectura del video sin retraso acumulado
+  analisis_teleop.py             ← E8: crudo vs Kalman, oclusiones, tiempos, retraso del robot
+  simular_teleop.py              ← prueba completa con video sintético (verdad conocida)
+  prueba_latencia_video.py       ← mide por qué "se trababa" (antes 2 s, ahora ~17 ms)
   analisis_e1.py / analisis_e2.py← resultados de la Entrega 1 y 2 (Kalman)
   analisis_e1_extra.py           ← sensibilidad, sesgo, Δt, estructura de R, repetibilidad...
   verificacion_cinematica.py     ← punto 1: error del brazo real medido en papel

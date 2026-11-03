@@ -44,7 +44,7 @@ Para llenar la columna **"Archivo, enlace, página o ubicación"** de cada instr
 | **E5** | Código de Kalman y comparación; estado, mediciones, F, H, Q, R, inicialización, parámetros | Ecuaciones: `python/kalman.py`. Modelo (estado, F, Q, H): `python/modelo_kalman.py`. Configuración (3 Q, P0, regla): `python/config_kalman.py`. R: `resultados/<origen>/e1/R.json`. Comparación: `python/analisis_e2.py`, `python/estimadores.py` | C1-N3…N5 |
 | **E6** | Datos de ajuste y validación identificados; ≥ 3 Q razonadas | Manifiesto: `datos/<crudos\|sinteticos>/manifiesto.json` (ajuste = `_01`, validación = `_02`). Selección: `resultados/<origen>/e2/seleccion_Q.json`, `resumen_seleccion_Q.md`, `metricas_e2_ajuste.md` | C2-N3, C3-N3 |
 | **E7** | Gráficas y métricas por código; aceleración angular y método numérico; límites de lo verificable | `resultados/<origen>/e2/`: `metricas_e2_validacion*.md`, `10_*`, `15_*`, `11_innovaciones_nis.png`, `consistencia_kalman.md`, `12_P_y_K.png`, `14_compromiso_Q_R.png`, `compromiso_Q_R.md`, `aceleracion_angular.md`, `13_aceleracion_angular.png` | C1-N4/N5, C3-N3/N4 |
-| **E8** | Visualización comparativa y teleoperación con la estimación | `python python/interfaz_imu.py` ("Mover el brazo con: Kalman / Media móvil / Integración directa"); tiempo de cómputo por muestra en la parte inferior. Grabaciones de sesión: botón "Grabar libre" | C2-N3…N5 |
+| **E8** | Visualización comparativa y teleoperación con la estimación | **Teleoperación:** `python python/teleop_camara.py` (tu brazo, visto por la cámara, mueve el robot con Kalman; tecla F = crudo/Kalman). Sesiones: `datos/teleop/sesion_XX.csv` (+ `_robot.csv` con el giroscopio del robot). Análisis: `python/analisis_teleop.py` → `resultados/reales/teleop/resumen_teleop.md`, `20_teleop_*.png`, `21_robot_*.png` (crudo vs Kalman en los mismos cuadros, oclusiones, tiempos de cómputo, retraso orden → robot y cámara → robot, vibración del robot). Latencia del video: `python/prueba_latencia_video.py`. Guía: `docs/PRUEBA_FINAL.md`. Visualización de las IMU en vivo: `python/interfaz_imu.py` | C2-N3…N5 |
 | **E9** | Comprobación individual | Respuestas modelo abajo | — |
 
 ---
@@ -117,9 +117,14 @@ condiciones de comparación y se validó la teleoperación."**
 - **Condiciones de comparación:** los tres métodos usan la misma φ0, el mismo sesgo, los mismos
   Δt_k y las mismas unidades.
 - **Ajuste y validación separados:** se ajusta con los registros `_01` y se valida con los `_02`.
-- **Teleoperación:** en `interfaz_imu.py`, la fuente "Kalman" envía al servo `modelo_a_servo(θ̂)`.
-  Se mide el tiempo de cómputo por muestra (decenas de µs, muy por debajo de los 10 ms del
-  periodo).
+- **Teleoperación** (`teleop_camara.py`): la cámara mide θ1 y θ2 de tu brazo, Kalman los
+  estima y envía `modelo_a_servo(θ̂)` al robot.
+  - **Validación:** se graban dos sesiones con el mismo protocolo (lento, rápido, oclusión),
+    una moviendo el robot con crudo y otra con Kalman.
+  - `analisis_teleop.py` compara crudo y Kalman **en los mismos cuadros**: suavidad, órdenes
+    al servo, retraso y error en oclusiones.
+  - Mide los tiempos de cómputo, unos 0,2 ms para Kalman frente a 33 ms entre cuadros.
+  - Con los giroscopios del robot mide cuánto tarda el robot en seguir la orden.
 
 **C3. "Interprete una métrica y justifique la elección final de Q; distinga suavizado de
 precisión e indique el límite de una conclusión."**

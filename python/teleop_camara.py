@@ -79,6 +79,7 @@ class ProcesadorCamara:
         self.theta_kf = None
         self.omega_kf = None
         self.visto = False
+        self.solo_theta1 = False
         self.t_calc_us = 0.0           # solo el paso de Kalman
         self.t_proc_ms = 0.0           # detección + ángulos + Kalman (todo el cuadro)
         self._ruido = None
@@ -133,7 +134,15 @@ class ProcesadorCamara:
             self.hombro_recordado = True
         self.pos = pos
         self.visto = all(p is not None for p in pos.values())
+        # Medición PARCIAL: sin muñeca pero con hombro y codo, θ1 sí se puede medir.
+        self.solo_theta1 = (not self.visto and pos["hombro"] is not None
+                            and pos["codo"] is not None)
         medido = None
+        if self.solo_theta1 and self.kalman is not None:
+            th1 = angulos_brazo(pos["hombro"], pos["codo"],
+                                (2 * pos["codo"][0] - pos["hombro"][0],
+                                 2 * pos["codo"][1] - pos["hombro"][1]))[0]
+            medido = np.array([th1 + self.offset[0], np.nan])
         if self.visto:
             crudo = np.array(angulos_brazo(pos["hombro"], pos["codo"], pos["muneca"]))
             self.theta_crudo = crudo + self.offset
@@ -173,7 +182,7 @@ class ProcesadorCamara:
 
 class Sesion:
     """Grabación de una sesión de teleoperación (para medir crudo vs Kalman)."""
-    COLUMNAS = ["t_s", "visto", "hombro_memoria", "theta1_crudo", "theta2_crudo",
+    COLUMNAS = ["t_s", "visto", "solo_theta1", "hombro_memoria", "theta1_crudo", "theta2_crudo",
                 "theta1_kf", "theta2_kf", "w1_kf", "w2_kf", "fuente", "enviando",
                 "cmd_h", "cmd_c", "enviado", "t_calc_kf_us", "t_proc_ms", "t_espera_ms"]
     COLUMNAS_ROBOT = ["t_s", "seq", "t1_us", "w1_dps", "w2_dps"]
@@ -206,7 +215,8 @@ class Sesion:
     def agregar(self, proc, t, enviando, cmd, enviado, t_espera_ms):
         def f(v, i):
             return "" if v is None else f"{v[i]:.3f}"
-        self._w.writerow([f"{t - self.t0:.4f}", int(proc.visto), int(proc.hombro_recordado),
+        self._w.writerow([f"{t - self.t0:.4f}", int(proc.visto), int(proc.solo_theta1),
+                          int(proc.hombro_recordado),
                           f(proc.theta_crudo, 0), f(proc.theta_crudo, 1),
                           f(proc.theta_kf, 0), f(proc.theta_kf, 1),
                           f(proc.omega_kf, 0), f(proc.omega_kf, 1),
@@ -281,7 +291,7 @@ def dibujar(img, proc, estado):
     vistos = "  ".join(f"{n}:{'si' if proc.pos.get(n) is not None else 'NO'}" for n in CC.MARCADORES)
     lineas = [
         f"crudo:  t1={_g(proc.theta_crudo, 0)}  t2={_g(proc.theta_crudo, 1)}   "
-        f"{'VISTO' if proc.visto else 'NO VISTO (Kalman predice)'}",
+        f"{'VISTO' if proc.visto else ('SOLO t1 (t2 predicho)' if proc.solo_theta1 else 'NO VISTO (Kalman predice)')}",
         f"kalman: t1={_g(proc.theta_kf, 0)}  t2={_g(proc.theta_kf, 1)}   "
         f"{proc.config['nombre']} (f_n={proc.config['f_n_hz']} Hz)",
         f"robot <- {proc.fuente.upper()}   {'ENVIANDO' if estado['enviando'] else 'PAUSA (R)'}   "
