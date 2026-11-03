@@ -11,6 +11,9 @@ Diferencias con el Kalman de los giroscopios:
   - Llega a ~30 cuadros/s con Δt irregular: se usa el Δt real de cada cuadro.
   - Si en un cuadro no se ve un marcador, se hace SOLO la predicción: el filtro
     sigue estimando con su modelo en vez de congelarse.
+  - Pero "velocidad constante" solo es creíble un rato: tu brazo frena. Si la oclusión
+    dura más de PREDICCION_LIBRE_S, la velocidad estimada se va apagando (constante de
+    tiempo FRENADO_TAU_S): el robot se detiene suavemente en vez de seguir de largo.
 
 Para integrar las IMU después (opción 2): se agregan las filas de los
 giroscopios a H ([0 1 0 0] y [0 0 0 1]) y sus varianzas (Entrega 1) a R.
@@ -44,6 +47,7 @@ class KalmanCamara:
         p0 = [CC.P0_DIAG["theta"], CC.P0_DIAG["omega"]] * 2
         self.kf = FiltroKalman([theta0[0], 0.0, theta0[1], 0.0], np.diag(p0))
         self.ultima_innovacion = None
+        self.t_sin_medir = 0.0
 
     def _FQ(self, dt):
         F = np.zeros((4, 4))
@@ -58,7 +62,14 @@ class KalmanCamara:
         """Un cuadro. theta_medido = (θ1, θ2) o None si no se vio el brazo."""
         F, Q = self._FQ(dt)
         self.kf.predecir(F, Q)
-        if theta_medido is not None:
+        if theta_medido is None:
+            self.t_sin_medir += dt
+            if self.t_sin_medir > CC.PREDICCION_LIBRE_S:
+                frenar = math.exp(-dt / CC.FRENADO_TAU_S)
+                self.kf.x[1] *= frenar
+                self.kf.x[3] *= frenar
+        else:
+            self.t_sin_medir = 0.0
             z = np.asarray(theta_medido, float)
             # El ángulo es circular: la innovación se lleva a (−180, 180].
             pred = H_CAMARA @ self.kf.x

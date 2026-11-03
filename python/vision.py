@@ -128,6 +128,8 @@ class DetectorAruco:
         self._nombre_de_id = {i: n for n, i in CC.ARUCO_IDS.items()}
         self.esquinas = {}              # {nombre: 4 esquinas} del último cuadro (para dibujar)
         self.rechazados = []            # cuadriláteros que parecían marcador pero no se leyeron
+        self.seguidos = set()           # marcadores encontrados por cercanía (no por su ID)
+        self._ultimo = {}               # {nombre: (centro, lado, cuadros_seguidos)}
 
     def buscar(self, imagen_bgr):
         """{nombre: (x, y) o None}: el centro de cada marcador encontrado."""
@@ -144,7 +146,41 @@ class DetectorAruco:
                 c = c.reshape(4, 2)
                 self.esquinas[nombre] = c
                 pos[nombre] = (float(c[:, 0].mean()), float(c[:, 1].mean()))
+                self._ultimo[nombre] = (pos[nombre], _lado(c), 0)
+        self._seguir_por_cercania(pos)
         return pos
+
+    def _seguir_por_cercania(self, pos):
+        """Respaldo para el DESENFOQUE: si un marcador no se pudo leer, pero hay un
+        cuadrilátero "rechazado" (se ve el cuadrado, no se leen sus casillas) justo donde
+        estaba ese marcador hace un instante y de su mismo tamaño, se usa ese.
+        Solo durante unos pocos cuadros seguidos: luego se exige volver a leer el ID."""
+        self.seguidos = set()
+        libres = [c.reshape(4, 2) for c in self.rechazados]
+        for nombre in CC.MARCADORES:
+            if pos[nombre] is not None or nombre not in self._ultimo:
+                continue
+            centro, lado, n = self._ultimo[nombre]
+            if n >= CC.ARUCO_SEGUIR_MAX_CUADROS:
+                continue
+            mejor, mejor_d = None, CC.ARUCO_SEGUIR_RADIO_LADOS * lado
+            for k, c in enumerate(libres):
+                d = math.dist(centro, c.mean(axis=0))
+                if d < mejor_d and 0.6 * lado < _lado(c) < 1.6 * lado:
+                    mejor, mejor_d = k, d
+            if mejor is None:
+                self._ultimo[nombre] = (centro, lado, CC.ARUCO_SEGUIR_MAX_CUADROS)   # perdido
+                continue
+            c = libres.pop(mejor)
+            pos[nombre] = (float(c[:, 0].mean()), float(c[:, 1].mean()))
+            self.esquinas[nombre] = c
+            self.seguidos.add(nombre)
+            self._ultimo[nombre] = (pos[nombre], lado, n + 1)
+
+
+def _lado(c):
+    """Lado medio (px) de un cuadrilátero de 4 esquinas."""
+    return float(np.mean([math.dist(c[i], c[(i + 1) % 4]) for i in range(4)]))
 
 
 def crear_detector(modo=None):

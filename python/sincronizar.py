@@ -39,6 +39,7 @@ def subir_capturas(mensaje, avisar=print, rutas=("datos/crudos",)):
         if codigo != 0:
             avisar("Git no está disponible: las capturas quedan solo en tu PC.")
             return False
+        rutas = [r for r in rutas if (Rp.RAIZ / r).exists()]   # git add falla si falta una
         _git("add", *rutas)
         codigo, salida = _git("commit", "-m", mensaje)
         if codigo != 0 and "nothing to commit" not in salida and "nada para hacer commit" not in salida:

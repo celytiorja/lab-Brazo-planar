@@ -24,6 +24,10 @@ MODO_DETECCION = "aruco"
 ARUCO_DICCIONARIO = "DICT_4X4_50"
 ARUCO_IDS = {"hombro": 0, "codo": 1, "muneca": 2}
 ARUCO_LADO_CM = 6.0             # lado impreso (con la cámara a 60–80 cm se ve de ~35 px)
+# Respaldo contra el DESENFOQUE (brazo rápido): si el cuadro no se lee pero se ve un
+# cuadrado del mismo tamaño muy cerca de donde estaba, se usa ese, hasta N cuadros seguidos.
+ARUCO_SEGUIR_MAX_CUADROS = 8    # ~0.25 s a 30 fps; luego hay que volver a leer el número
+ARUCO_SEGUIR_RADIO_LADOS = 1.5  # distancia máxima, en "lados" del cuadro
 
 # El hombro casi no se mueve: si un cuadro no se ve un momento, se usa su última
 # posición en vez de perder la medición completa.
@@ -54,6 +58,10 @@ CONFIGS_Q_CAMARA = [
 ]
 R_CAMARA_POR_DEFECTO = 1.0      # [°²] hasta que midas el ruido real (tecla N)
 P0_DIAG = {"theta": 10.0**2, "omega": 50.0**2}
+# Oclusión (no se ve el brazo): Kalman predice con velocidad constante hasta
+# PREDICCION_LIBRE_S; después la velocidad se apaga con constante de tiempo FRENADO_TAU_S.
+PREDICCION_LIBRE_S = 0.20
+FRENADO_TAU_S = 0.15
 
 # ---------- Envío al robot ----------
 PERIODO_ORDENES_S = 0.04        # máximo 25 órdenes por segundo

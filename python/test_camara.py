@@ -81,3 +81,24 @@ def test_procesador_recuerda_el_hombro_si_se_tapa():
     assert proc.procesar(sin_hombro, 1 / 30)            # sigue viendo el brazo...
     assert proc.hombro_recordado                         # ...con el hombro de memoria
     assert proc.theta_crudo == pytest.approx((90, 90), abs=1)
+
+
+def test_lector_video_no_acumula_retraso():
+    """Con un programa MÁS LENTO que la cámara, el cuadro usado sigue siendo reciente."""
+    import prueba_latencia_video as PL
+    from video_rapido import LectorVideo
+    srv, url = PL.iniciar_servidor(8799)
+    lector = LectorVideo(url)
+    try:
+        assert lector.metodo.startswith("MJPEG")
+
+        def leer():
+            ok, img, _ = lector.leer(0.3)
+            return ok, img
+        edades = PL.medir_edades(leer, trabajo_s=0.05, duracion_s=2.0)
+    finally:
+        lector.cerrar()
+        srv.shutdown()
+    assert len(edades) > 20
+    assert edades[-10:].mean() < 80            # con OpenCV aquí ya serían cientos de ms
+    assert lector.descartados > 0               # botó los viejos

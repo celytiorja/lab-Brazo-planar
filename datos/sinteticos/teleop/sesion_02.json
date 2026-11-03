@@ -1,0 +1,37 @@
+{
+  "fecha": "2026-11-03T01:28:02",
+  "r_camara": [
+    0.0764378796842431,
+    0.07688922393409109
+  ],
+  "origen_r": "medido 2026-11-03T01:28:02",
+  "configs_q": [
+    {
+      "nombre": "Q_baja",
+      "f_n_hz": 1.5,
+      "razon": "muy suave; retraso ≈ 150 ms"
+    },
+    {
+      "nombre": "Q_media",
+      "f_n_hz": 3.0,
+      "razon": "sigue movimientos de hasta ~2 Hz; retraso ≈ 75 ms"
+    },
+    {
+      "nombre": "Q_alta",
+      "f_n_hz": 6.0,
+      "razon": "casi sin retraso (≈ 37 ms); filtra poco"
+    }
+  ],
+  "offset": [
+    0.0,
+    0.0
+  ],
+  "fuente_video": "0",
+  "modo_deteccion": "aruco",
+  "periodo_ordenes_s": 0.04,
+  "cambio_min_grados": 1,
+  "commit": "fa0137a+cambios_sin_commit",
+  "cuadros": 900,
+  "muestras_robot": 0,
+  "SINTETICO": "Video generado por simular_teleop.py: NO es una medición."
+}

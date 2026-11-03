@@ -18,3 +18,6 @@ Thumbs.db
 build/
 *.bin
 *.elf
+
+# Video sintético de prueba (se regenera con python python/simular_teleop.py --video)
+datos/sinteticos/teleop/video_sintetico.mp4
