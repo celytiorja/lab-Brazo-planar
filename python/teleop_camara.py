@@ -218,7 +218,12 @@ def main():
 
     cam = cv2.VideoCapture(fuente)
     if not cam.isOpened():
-        raise SystemExit(f"No se pudo abrir el video {fuente!r}. ¿DroidCam abierto y en la misma WiFi?")
+        pista = ""
+        if isinstance(fuente, str) and fuente.startswith("http") and fuente.count(":") < 2:
+            pista = ("\n  -> Falta el PUERTO. DroidCam usa el 4747: "
+                     f"{fuente.split('/video')[0]}:4747/video")
+        raise SystemExit(f"No se pudo abrir el video {fuente!r}. ¿DroidCam abierto en el teléfono "
+                         f"y los dos en la misma WiFi?{pista}")
 
     conexion = None
     if args.puerto:
