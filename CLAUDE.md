@@ -1,111 +1,199 @@
-# Notas para Claude (leer siempre al iniciar)
+# Notas para Claude (leer SIEMPRE completo al iniciar)
 
-## ⚠️ IMPORTANTE: rol de profesor
+Última actualización: 2026-11-03. Rama de trabajo: `claude/friendly-feynman-xfljpf`
+(repo `celytiorja/lab-Brazo-planar`, es la única rama; el usuario también hace commits
+en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autoría.
 
-- El usuario está **aprendiendo**: robótica (cinemática), procesamiento de señales,
-  IMU y **Git** (es su primer repositorio). Su aprendizaje es la prioridad n.º 1;
-  que el sistema funcione es la n.º 2.
-- No entregar solo código: explicar **qué hace, por qué y cómo comprobarlo**, de
-  forma práctica, intuitiva y orgánica. Proponer pequeños ejercicios y preguntas.
-- Enseñar Git en el camino: en cada commit/push explicar qué se hizo y qué comando
-  equivalente usaría el usuario (ver `docs/00_git_para_principiantes.md`).
-- **Partir de cero:** no asumir que sabe usar la terminal, VS Code o Arduino IDE.
-  Decir siempre DÓNDE se escribe cada cosa (terminal de VS Code, Arduino IDE,
-  Monitor Serie), qué debe ver en pantalla y avanzar UN paso a la vez,
-  esperando su confirmación antes de seguir.
-- Idioma: español. Código y comentarios en español.
+## 1. ⚠️ Rol: PROFESOR (lo más importante)
 
-## Estrategia de enseñanza (ajustar según funcione)
+- El usuario está **aprendiendo** robótica (cinemática), PDS, IMU, Kalman y **Git** (su
+  primer repositorio). Prioridad n.º 1: que aprenda. N.º 2: que funcione.
+- No entregar solo código: explicar **qué hace, por qué y cómo comprobarlo**, de forma
+  práctica e intuitiva. Al cerrar, 1–2 preguntas cortas para que responda con sus palabras.
+- **Partir de cero** en herramientas: decir SIEMPRE DÓNDE se escribe cada cosa (terminal de
+  VS Code, Arduino IDE, Monitor Serie), qué debe ver en pantalla, y avanzar UN paso a la vez
+  esperando su confirmación. Se frustra (con razón) si se saltan pasos.
+- **Ya sabe Arduino IDE** y cargar el ESP32: no explicar lo básico de Arduino.
+- Idioma: español. Código y comentarios en español, con el estilo didáctico del repo.
+- Enseñar Git en el camino: explicar cada commit/push y el comando equivalente.
 
-- Funciona: analogías con su propio brazo, números de SU proyecto, tablas,
-  paso a paso, y cerrar con 1–2 preguntas cortas para que explique con sus
-  palabras (práctica de recuerdo). Practicar con las preguntas de comprobación
-  individual (sección 8 de los instrumentos; respuestas modelo en docs/ENTREGAS.md).
-- No funciona: saltar pasos o dar por sabido algo (se frustra con razón).
-- Registro de comprensión (actualizar con sus respuestas):
-  - 2026-11-01: se explicó el panorama (medir→estimar→actuar, por qué IMU si el
-    servo tiene control, ruido/deriva/retraso, E1 vs E2). Pendiente su respuesta a
-    "¿consigna = medición?" y "¿por qué la media móvil no corrige la deriva?".
+### Estrategia que funciona / no funciona
+- ✅ Funciona: analogías con su propio brazo u objetos cotidianos (pesa que marca 1 kg de
+  más = sesgo; alcancía = deriva; videojuego = commits; dos oficinas/teléfono = núcleos e
+  interrupción I2C), **números de SU proyecto**, tablas, diagnóstico "eslabón por eslabón"
+  de una cadena, programas pequeños que imprimen todos los números (`kalman_paso_a_paso.py`).
+- ❌ No funciona: saltar pasos, dar por sabido, bloques largos de teoría sin aplicación
+  (dijo: "el concepto perfecto, pero aplicarlo realmente es diferente").
+- Pidió explícitamente aprender la teoría "bien" más adelante (cuando no esté apurado).
 
-## Entorno del usuario
+### Registro de comprensión (actualizar con sus respuestas)
+- ✅ "¿Consigna = medición?" → respondió "la consigna es un deseo, no una medición".
+  Reforzar con un ejemplo propio (escalones_02: el hombro no obedeció).
+- ❌→explicado: "¿por qué la media móvil no corrige la deriva?" No lo sabía (no ha visto
+  teoría). Se explicó con sesgo vs ruido (pesa), promedio y suma → deriva.
+- Kalman explicado desde cero (predecir/medir/mezclar, K, P, Q vs R, 6 decisiones de diseño)
+  con `python/kalman_paso_a_paso.py` (1 variable; K converge a 0.27 con q = 0.0359).
+- Entiende Git básico: status, log --oneline, diff, pull, add, commit, push, restore,
+  git ls-files; sabe salir del visor `less` con `q`; sabe que un commit guarda solo cambios.
+- Preguntas que quedaron SIN responder (retomarlas en algún momento, sin agobiar):
+  1. Pesa con +2 kg de sesgo y ±0.1 de ruido, 100 pesadas promediadas: ¿qué da? ¿cómo
+     obtener el peso real?
+  2. En `kalman_paso_a_paso.py` con q = 0.001: ¿alcanza más rápido o más lento el salto?
+  3. ¿Por qué no elegimos la media móvil N=21 si tiene menos ruido que Kalman? (retraso 98 ms)
+  4. ¿Qué "sabe" Kalman para predecir la muñeca tapada? (modelo de velocidad constante)
+  5. 17 °/min de deriva sin calibrar → en 5 min, ¿cuánto creería que giró? (~85°)
 
-- Windows 11, VS Code, Python 3.12. Arduino IDE para el ESP32.
-- Repo clonado en `C:\Users\juanp\Documents\lab-Brazo-planar` (NO es la carpeta
-  "Documentos" de OneDrive que muestra el Explorador; para abrirla: `explorer .`
-  desde la terminal). Entorno virtual en `.venv` (activar: `.venv\Scripts\activate`).
-- **Ya sabe usar Arduino IDE y programar el ESP32** (placa y carga ya funcionan):
-  no explicar instalación de placas ni lo básico de Arduino.
-- Hardware: ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521).
-- Orden de pruebas elegido por el usuario: primero solo servos
-  (`firmware/prueba_servos`), las IMU después.
-- ✅ Servos validados (2026-10-26): se mueven juntos, sin zumbido en 0°/180° con
-  pulso 500–2500 µs, el ESP32 no se reinicia con la fuente actual.
-- Interfaz (`python/interfaz.py`) usa el protocolo de `prueba_servos`
-  ("h <0-180>, c <0-180>\n"). Calibración servo↔θ en `parametros.py` (provisional).
-- Alimentación de servos: cargador de 5 V / 68 W (verificar corriente real a 5 V).
+## 2. Entorno del usuario
 
-## Proyecto
+- Windows 11, VS Code, Python 3.12, Git 2.56 (ya autenticado con GitHub en Windows).
+- Repo en `C:\Users\juanp\Documents\lab-Brazo-planar` (NO la carpeta "Documentos" de
+  OneDrive; para abrirla: `explorer .` desde la terminal).
+- Entorno virtual `.venv` (activar: `.venv\Scripts\activate`; la línea debe empezar con
+  `(.venv)`). Dependencias: `pip install -r requirements.txt` (incluye scipy y opencv-python).
+- ESP32 en **COM3**. En Arduino IDE tenía elegida "ESP32 Wrover Module" (sale aviso de
+  PSRAM, inofensivo); se sugirió "ESP32 Dev Module".
+- Monitor Serie: 115200 para `prueba_servos`/`prueba_hardware`; **460800** para
+  `adquisicion`. Debe estar CERRADO cuando Python usa el puerto.
+- Teléfono con **DroidCam**; IP actual del teléfono **192.168.1.38**, puerto **4747**.
+  Ping desde el PC responde pero con 250–550 ms (WiFi lenta/ahorro de energía; para baja
+  latencia se recomendó el hotspot del teléfono). DroidCam atiende a UN cliente a la vez
+  (cerrar el navegador antes de correr Python). Ya ve la cámara en el navegador.
 
-- Brazo planar 2 GDL que imitará un brazo real captado por cámara (fase futura).
-- Fase actual: **Entrega 1** (PDS_C3_Kalman_Entrega1): cinemática directa/inversa,
-  captura estática ≥30 s + dinámica con ambas IMU, media/varianza/matriz R,
-  correlación cruzada, integración de Euler con media móvil (≥2 ventanas),
-  gráficas + tabla de métricas. Brazo movido desde interfaz gráfica en PC.
+## 3. Hardware
 
-## Estado (2026-11-01)
+- ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521), fuente 5 V (cargador USB 68 W;
+  sin confirmar la corriente real a 5 V; no ha habido reinicios).
+- Pines (docs/02_conexiones.md): servo hombro GPIO25, codo GPIO26; I2C SDA GPIO21,
+  SCL GPIO22 (las dos IMU en el mismo bus). IMU1 = 0x68 (AD0 a GND/sin conectar) en el
+  eslabón 1; IMU2 = 0x69 (**AD0 a 3V3**) en el eslabón 2. GND de la fuente unido al ESP32.
+  (Problema resuelto: con los dos AD0 sin conectar ambas eran 0x68 → NACK.)
+- L1 = 105 mm, L2 = 85 mm (de eje a eje). Calibración en `python/parametros.py`:
+  HOMBRO_OFFSET 0, SIGNO +1; CODO_OFFSET 90, **CODO_SIGNO −1** (servo del codo montado al
+  revés; ya en GitHub). Offsets aún provisionales (falta verificación en papel).
+- IMU pegadas en los eslabones del robot (la posición en el eslabón no importa para el
+  giroscopio). `EJE_GIRO` = gz, signo +1 en ambas (los datos reales siguen a la consigna).
+- **Brazo en plano HORIZONTAL** (sobre la mesa) → `PLANO_VERTICAL = False`: el
+  acelerómetro no ve el ángulo; la deriva NO es observable con IMU solas (declararlo).
 
-- Git: sabe status/log/diff/pull/add/commit/push. Primer commit propio `2f1a9a7`.
-- Calibración: `CODO_SIGNO = −1` ya está en GitHub (commit 7d1200e del usuario).
+## 4. Proyecto y entregas (instrumentos PDS Lab, corte 3, v2.0)
+
+- Objetivo final: brazo planar 2 GDL que copia en tiempo real un brazo humano.
+- **Entrega 1** (C1 40 % métodos base, C2 40 % ejecución/trazabilidad, C3 20 %
+  interpretación; evidencias E1–E4): cinemática directa/inversa con posiciones de
+  referencia y errores, reposo ≥ 30 s + dinámico repetible con ambas IMU, media/varianza/R,
+  correlación cruzada, Euler + media móvil (≥ 2 ventanas), gráficas + ≥ 2 métricas.
+- **Entrega 2** (C1 50 % modelo/implementación Kalman, C2 20 % validación y demostración,
+  C3 30 % interpretación y Q; evidencias E5–E9): estado, F, H, Q, R (de E1), x0/P0,
+  ≥ 3 Q razonadas con ajuste/validación separados, comparación directa/MM/Kalman,
+  aceleración angular numérica, **teleoperación del brazo usando la estimación** (C2-N3 lo
+  exige; sin ella C2 queda en N2), límites de lo verificable. N5: tiempos de cómputo,
+  latencia, contraste teleoperar crudo vs Kalman; fusión sensorial / rediseño.
+- Localizadores de evidencias y respuestas modelo a las preguntas individuales:
+  `docs/ENTREGAS.md`. Guía para hablar con los números reales: `docs/SUSTENTACION.md`.
 - Ya sustentó una vez SIN IMU (con datos sintéticos, declarados como tales).
-- Ya tiene las MPU. Pines: docs/02_conexiones.md. `EJE_GIRO` = gz con signo +1
-  en ambas (los datos reales siguen a la consigna). **Plano HORIZONTAL** (sobre la
-  mesa, confirmado 2026-11-02) → `PLANO_VERTICAL = False`: el acelerómetro NO da
-  el ángulo; la deriva no es observable con lo disponible (declararlo en E2).
-- Código final: `firmware/adquisicion` (460800 baud) + `python/interfaz_imu.py`
-  (IMU en vivo, calibrar sesgo, grabar reposo/perfiles en datos/crudos con
-  manifiesto automático, teleoperación con directa/MM/Kalman) +
-  `analisis_e1.py` / `analisis_e2.py`. Guía: docs/04_captura_y_entregas.md.
-  Probado con un ESP32 simulado; el .ino NUNCA se ha compilado (no hay
-  arduino-cli aquí): si da error, corregir con lo que pegue el usuario.
-- ✅ 2026-11-01: `adquisicion.ino` compila y corre (ojo: la placa elegida en el
-  IDE era "ESP32 Wrover Module"; sugerido "ESP32 Dev Module"). Ambas MPU
-  responden (problema era AD0 de las dos sin conectar → misma dirección 0x68).
-  `interfaz_imu.py COM3` conecta y grafica en Windows (hubo que quitar
-  matplotlib.use("Agg") de reporte.py). Siguiente: pegar las IMU en los
-  eslabones (no hace falta el eje), verificar signo del giro, capturar.
-- 2026-11-02 capturas reales: estatico_01 (fw1.0), estatico_02, escalones_01
-  (fw1.0), escalones_02/03 (fw1.1): todas a 100.00 Hz sin pérdidas. Los senos
-  fallaron dos veces (fw1.0: servo.write bloqueaba ~15 ms → 55 Hz; fw1.1: la
-  interrupción I2C quedaba en el núcleo 1 → lecturas de 39 ms) y están en
-  datos/crudos/descartados/ con LEEME. fw1.2 inicia Wire en la tarea del
-  núcleo 0 (sin probar aún). Faltan: seno_lento_01/02 y seno_rapido_01/02.
-  Análisis: datos_imu.cargar descarta el 1.er segundo de la fase 0 (el servo
-  llega desde la pose anterior); con eso error estacionario 49° → 5.8°.
-- ✅ 2026-11-02: fw1.2 funciona (100 Hz, 0 pérdidas, I2C ≤ 544 µs con servos en
-  movimiento). Capturas completas; manifiesto automático con reglas: reposo =
-  1.º estacionario (Levene) → estatico_03; perfiles = solo repeticiones que pasan
-  validar_datos, incl. "el brazo medido sigue a la consigna" (escalones_02
-  rechazada: hombro no se movió). Ajuste: escalones_01, seno_lento_01,
-  seno_rapido_01; validación: escalones_03, seno_lento_02, seno_rapido_02.
-  Resultados reales en resultados/reales/ (Q_media elegida). Ruido de E2 se mide
-  en reposo PURO (no mezclar con la cola del movimiento). La interfaz sube cada
-  captura sola (python/sincronizar.py: add/commit/pull -X ours/manifiesto/push).
-  Pendiente: verificación de cinemática en papel (punto 1 E1) y teleoperación.
-- Teleoperación (E2, decidido 2026-11-02): OPCIÓN 1 = solo cámara del teléfono
-  (DroidCam, URL http://IP:4747/video), 3 marcadores de color (hombro/codo/muñeca),
-  vista desde arriba; Kalman [θ, ω] con medición de ángulo (kalman_camara.py,
-  q = r·(2π f_n)^4). IMU siguen en el robot. Opción 2 (fusión cámara + giros en el
-  brazo humano) queda abierta según lo que diga el profesor. Probado solo con
-  video simulado. Guía: docs/05_teleoperacion_camara.md.
-- Datos sintéticos en datos/sinteticos (siempre marcados; nunca presentarlos
-  como reales). Resultados de prueba en resultados/sinteticos.
-- Pendiente: capturas reales, verificación de cinemática en papel milimetrado
-  (punto 1 E1), etiqueta del cargador (corriente a 5 V).
 
-## Convenciones
+## 5. Código (qué es cada cosa)
 
-- Pines: ver `docs/02_conexiones.md` (servos GPIO25/26, I2C GPIO21/22,
-  IMU1=0x68 eslabón 1, IMU2=0x69 eslabón 2).
-- Ángulos en grados en la interfaz; L1/L2 en mm en `python/parametros.py`.
-- IMU2 mide el ángulo absoluto θ1+θ2 → θ2 = θ_IMU2 − θ_IMU1.
-- Pruebas: `python -m pytest python/`.
+Firmware (`firmware/`):
+- `prueba_servos/` (115200, "h 90, c 45", varias órdenes por coma).
+- `prueba_hardware/` (escáner I2C + IMU + servos, 115200).
+- `adquisicion/` **v1.2** (460800): tarea de muestreo FreeRTOS en el **núcleo 0** con
+  `vTaskDelayUntil` 10 ms, **Wire.begin dentro de esa tarea** (interrupción I2C en el
+  núcleo 0), cola de muestras; loop() en núcleo 1: órdenes (h/c/s/p/x/?), perfiles
+  (1 escalones, 2 seno lento, 3 seno rápido; 3 s reposo + mov + 3 s reposo), servos
+  máx. 1 escritura/20 ms, envío "D,seq,t1_us,t2_us,perfil,fase,cmd_h,cmd_c,ax1..gz2".
+
+Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.py`:
+- Cinemática: `cinematica.py`, `simulador.py` (VistaBrazo reutilizable), `interfaz.py`
+  (mueve el robot con prueba_servos), `servos.py`, `parametros.py`,
+  `verificacion_cinematica.py` (`--plantilla` crea la hoja de 10 puntos ×2).
+- Captura: `interfaz_imu.py` (IMU en vivo con blitting, botones: Ir a posición de inicio,
+  Calibrar sesgo, Grabar reposo 40 s, Perfiles 1–3, Grabar libre; "Mover el brazo con"
+  sliders/directa/MM/Kalman; sube cada captura sola), `tiempo_real.py`, `grabador.py`
+  (CSV + JSON + manifiesto), `sincronizar.py` (add → commit → `pull --no-rebase -X ours` →
+  rehace manifiesto → push), `conexion.py`, `blit.py`, `config_imu.py`.
+- Análisis: `datos_imu.py` (descarta el 1.er s de la fase 0), `estimadores.py`
+  (IntegracionDirecta, MediaMovilIntegracion, KalmanBrazo), `kalman.py` (Joseph, NIS),
+  `modelo_kalman.py`, `config_kalman.py` (Q por frecuencia de corte 1.5/5/15 Hz a partir de
+  R; RETRASO_MAX 40 ms), `metricas.py`, `validar_datos.py` (incluye "el brazo medido sigue
+  a la consigna"), `analisis_e1.py` + `analisis_e1_extra.py`, `analisis_e2.py` (ruido de
+  ω medido en REPOSO PURO; selección = menor ruido con retraso ≤ 40 ms), `reporte.py`
+  (el manifiesto real se regenera solo al analizar).
+- Teleoperación con cámara: `teleop_camara.py`, `vision.py` (marcadores HSV aprendidos con
+  clic), `kalman_camara.py` (estado [θ1, ω1, θ2, ω2], H mide θ, q = r·(2π f_n)^4 con
+  f_n 1.5/3/6 Hz, predice si no ve), `config_camara.py`.
+- Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
+  `perfiles.py` (copia de los perfiles del firmware).
+- Pruebas: `python -m pytest python/` → **26 pasan**.
+- Docs: `docs/00_git…`, `01_cinematica`, `02_conexiones`, `03_interfaz`,
+  `04_captura_y_entregas`, `05_teleoperacion_camara`, `ENTREGAS`, `SUSTENTACION`;
+  `datos/DICCIONARIO.md`; `datos/crudos/descartados/LEEME.md`.
+
+## 6. Datos reales (datos/crudos) y lo que se descubrió con ellos
+
+- Capturas: estatico_01 (fw1.0), estatico_02, estatico_03 (fw1.1); escalones_01 (fw1.0),
+  escalones_02/03/04 (fw1.1), escalones_05 (fw1.2); seno_lento_01/02 y seno_rapido_01/02
+  (fw1.2). Todas 100.00 Hz, 0 pérdidas.
+- Manifiesto automático (reglas fijas, `grabador.actualizar_manifiesto`):
+  - Reposo para R = 1.º estacionario (Levene p > 0.05 en w1 y w2) → **estatico_03**
+    (01 y 02 tenían movimientos: p ≈ 1e-36, ρ w1–w2 ≈ 0.85).
+  - Perfiles = solo repeticiones que pasan `validar_datos`; ajuste = 1.ª válida,
+    validación = 2.ª válida. **escalones_02 rechazada** (amplitud medida/consigna 0.47: el
+    hombro NO se movió). Ajuste: escalones_01, seno_lento_01, seno_rapido_01. Validación:
+    escalones_03, seno_lento_02, seno_rapido_02.
+- `descartados/`: senos con fw1.0 (servo.write bloqueaba ~15 ms → 55 Hz) y fw1.1 (la
+  interrupción I2C quedaba en el núcleo 1 → lecturas de 39 ms, 96–99 Hz). Documentado.
+- Arranque de perfil: el servo venía de otra pose y se movía en el "reposo inicial" →
+  sesgo y condición inicial malos (error 49°); se descarta el 1.er s (error 5.8°).
+- Resultados reales (resultados/reales/e1, e2):
+  - σ giro reposo 0.030 / 0.033 °/s; R diagonal (ρ = 0.00); sesgo ≈ +0.26 / −0.50 °/s.
+  - Deriva sin compensar +15.6 / −30.2 °/min; compensada +0.56 / −0.10 °/min.
+  - Retraso consigna → brazo ≈ 190 ms (servo). MM5/MM21: 20/98 ms (teoría 20/100).
+  - Q elegida **Q_media** (f_c 5 Hz, q = 0.0097). Ruido ω reposo puro: directa 0.031,
+    MM5 0.017, **Kalman 0.014**, MM21 0.009 °/s. Retraso ω (validación): MM5 19.7,
+    **Kalman 17.3**, MM21 98 ms. Ruido α: directa 12.0 vs Kalman 3.3 °/s².
+  - NIS en reposo ≈ 2–4 (consistente); en movimiento ≫ 2 (vibración del servo, el servo
+    no alcanza la amplitud en los senos rápidos): limitación de R de reposo.
+  - Aviso: el acelerómetro ay2 satura unas pocas muestras en los arranques de escalones.
+
+## 7. Teleoperación (Entrega 2) — EN CURSO
+
+- Decisión (2026-11-02): **opción 1 = solo cámara del teléfono** (DroidCam), el maestro es
+  el brazo del usuario, vista desde ARRIBA de la mesa; IMU siguen en el robot. Opción 2
+  (fusión cámara + giroscopios en el brazo humano) queda abierta según el profesor; el
+  código está preparado (agregar filas de giro a H y R en `kalman_camara.py`).
+- Marcadores recomendados (mate, ~3 cm, encima del brazo): **hombro azul, codo verde,
+  muñeca fucsia/magenta**. Evitar rojo/naranja/amarillo/café (piel, madera), blanco/gris.
+- Comando: `python python/teleop_camara.py --video http://192.168.1.38:4747/video`
+  (+ `--puerto COM3` para mover el robot; arranca en PAUSA, tecla R). Teclas: L colores
+  (clic hombro, codo, muñeca), C pose de referencia (brazo estirado al frente = (90, 0)),
+  N medir R de la cámara (10 s quieto), F crudo↔Kalman, 1/2/3 Q, G grabar (datos/teleop,
+  se sube solo), Q salir.
+- Estado: solo probado con video simulado. El usuario ya ve la cámara en el navegador y
+  estaba por recortar los papeles de colores. SIGUIENTE: correr el programa, tecla L,
+  verificar detección; luego C, N; luego con robot; luego grabar sesiones (tabla en
+  docs/05: crudo vs Kalman lento/rápido + oclusión) y escribir `analisis_teleop.py`
+  (suavidad de órdenes, retraso Kalman vs crudo, tiempo de cómputo, latencia).
+
+## 8. Pendientes (en orden)
+
+1. Teleoperación con cámara funcionando + sesiones grabadas + análisis (E8, C2).
+2. Verificación de la cinemática en papel milimetrado (`verificacion_cinematica.py
+   --plantilla`, docs/04 §4b): punto 1 de E1 y referencia independiente de E2.
+3. Practicar las preguntas de comprobación individual (docs/ENTREGAS.md).
+4. Llenar los instrumentos (equipo, códigos, commit/tag `entrega1`/`entrega2`).
+5. (Opcional) Opción 2 de fusión cámara + IMU si el profesor lo pide.
+- Menores: confirmar corriente del cargador a 5 V; elegir "ESP32 Dev Module".
+
+## 9. Trampas conocidas (no repetir)
+
+- No poner `matplotlib.use("Agg")` en módulos que importa la interfaz (solo en scripts de
+  análisis): la ventana no se abre.
+- Redibujar la figura completa tarda ~230 ms: usar blitting (`blit.py`).
+- El usuario a veces graba sin haber hecho `git pull` → nombres/versiones viejas; revisar la
+  versión de firmware en el JSON de cada captura.
+- Si el pull choca por `manifiesto.json`: `git restore datos/crudos/manifiesto.json` y
+  repetir (o usar la subida automática, que lo resuelve sola).
+- Nunca presentar datos sintéticos como reales (están en datos/sinteticos, marcados).
+- No borrar datos del usuario: mover a `descartados/` con explicación.
+- El .ino no se puede compilar aquí (no hay arduino-cli): revisar a mano y pedir errores.
