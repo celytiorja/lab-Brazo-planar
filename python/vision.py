@@ -1,6 +1,20 @@
-"""Seguimiento de 3 marcadores de color y cálculo de los ángulos del brazo humano.
+"""Seguimiento de 3 marcadores (hombro, codo, muñeca) y cálculo de los ángulos del brazo.
 
-Idea (procesamiento de imágenes básico):
+Hay DOS formas de encontrar los marcadores (config_camara.MODO_DETECCION):
+
+A) "aruco" (RECOMENDADA): cuadros impresos en blanco y negro, como un QR pequeñito.
+   1. Se pasa la imagen a grises y se umbraliza de forma ADAPTATIVA (cada zona con su
+      propio umbral): funciona con luz fuerte, débil o desigual.
+   2. Se buscan contornos de 4 lados (cuadriláteros) con borde negro.
+   3. Se "endereza" cada cuadrilátero y se leen sus 4×4 casillas blanco/negro: eso es un
+      número (el ID). El diccionario tiene bits de sobra para CORREGIR errores, así que
+      una mancha, la piel o la madera nunca se confunden con un marcador.
+   4. El centro del marcador = promedio de sus 4 esquinas (precisión de sub-píxel).
+   Por qué es más robusto que el color: el contraste blanco/negro existe con cualquier
+   luz (el color "azul claro" se vuelve gris con poca luz o blanco con mucha), y el ID
+   dice CUÁL marcador es sin depender de dónde estaba antes.
+
+B) "color" (respaldo): marcadores de papel de color, aprendidos con un clic.
   1. Pasar la imagen de RGB a HSV: H = tono (el "color"), S = saturación, V = brillo.
      El tono cambia poco con la iluminación; por eso se segmenta por H.
   2. Umbral: quedarse con los píxeles cuyo H, S, V están cerca del color aprendido.
@@ -76,6 +90,70 @@ class Marcador:
         if mejor is not None:
             self.pos = mejor
         return mejor
+
+
+class DetectorColor:
+    """Modo "color": un Marcador de color por articulación (hay que aprenderlos con clic)."""
+    modo = "color"
+
+    def __init__(self):
+        self.marcadores = {n: Marcador(n) for n in CC.MARCADORES}
+
+    @property
+    def listo(self):
+        return all(m.calibrado for m in self.marcadores.values())
+
+    def buscar(self, imagen_bgr):
+        """{nombre: (x, y) o None} para hombro, codo y muñeca."""
+        hsv = cv2.cvtColor(imagen_bgr, cv2.COLOR_BGR2HSV)
+        return {n: m.buscar(hsv) for n, m in self.marcadores.items()}
+
+
+class DetectorAruco:
+    """Modo "aruco": cada articulación lleva un cuadro impreso con su número (ID).
+
+    Los cuadros se imprimen con  python python/generar_marcadores.py
+    (crea docs/marcadores_aruco.pdf; imprimir a TAMAÑO REAL).
+    """
+    modo = "aruco"
+    listo = True                                    # no hay nada que aprender
+
+    def __init__(self):
+        diccionario = cv2.aruco.getPredefinedDictionary(
+            getattr(cv2.aruco, CC.ARUCO_DICCIONARIO))
+        parametros = cv2.aruco.DetectorParameters()
+        # Afinar las esquinas a sub-píxel: el centro tiembla menos (menos R).
+        parametros.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+        self._detector = cv2.aruco.ArucoDetector(diccionario, parametros)
+        self._nombre_de_id = {i: n for n, i in CC.ARUCO_IDS.items()}
+        self.esquinas = {}              # {nombre: 4 esquinas} del último cuadro (para dibujar)
+        self.rechazados = []            # cuadriláteros que parecían marcador pero no se leyeron
+
+    def buscar(self, imagen_bgr):
+        """{nombre: (x, y) o None}: el centro de cada marcador encontrado."""
+        gris = cv2.cvtColor(imagen_bgr, cv2.COLOR_BGR2GRAY)
+        esquinas, ids, rechazados = self._detector.detectMarkers(gris)
+        self.rechazados = rechazados
+        self.esquinas = {}
+        pos = {n: None for n in CC.MARCADORES}
+        if ids is not None:
+            for c, i in zip(esquinas, ids.flatten()):
+                nombre = self._nombre_de_id.get(int(i))
+                if nombre is None or pos[nombre] is not None:
+                    continue                # ID ajeno o repetido: se ignora
+                c = c.reshape(4, 2)
+                self.esquinas[nombre] = c
+                pos[nombre] = (float(c[:, 0].mean()), float(c[:, 1].mean()))
+        return pos
+
+
+def crear_detector(modo=None):
+    modo = modo or CC.MODO_DETECCION
+    if modo == "aruco":
+        return DetectorAruco()
+    if modo == "color":
+        return DetectorColor()
+    raise ValueError(f"Modo de detección desconocido: {modo!r} (use 'aruco' o 'color')")
 
 
 def angulos_brazo(hombro, codo, muneca):

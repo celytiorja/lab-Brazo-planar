@@ -1,6 +1,6 @@
 # Notas para Claude (leer SIEMPRE completo al iniciar)
 
-Última actualización: 2026-11-03. Rama de trabajo: `claude/friendly-feynman-xfljpf`
+Última actualización: 2026-11-03 (ArUco). Rama de trabajo: `claude/friendly-feynman-xfljpf`
 (repo `celytiorja/lab-Brazo-planar`, es la única rama; el usuario también hace commits
 en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autoría.
 
@@ -119,12 +119,15 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   a la consigna"), `analisis_e1.py` + `analisis_e1_extra.py`, `analisis_e2.py` (ruido de
   ω medido en REPOSO PURO; selección = menor ruido con retraso ≤ 40 ms), `reporte.py`
   (el manifiesto real se regenera solo al analizar).
-- Teleoperación con cámara: `teleop_camara.py`, `vision.py` (marcadores HSV aprendidos con
-  clic), `kalman_camara.py` (estado [θ1, ω1, θ2, ω2], H mide θ, q = r·(2π f_n)^4 con
+- Teleoperación con cámara: `teleop_camara.py` (`--modo aruco|color`), `vision.py`
+  (DetectorAruco por defecto: cuadros impresos DICT_4X4_50, ID 0 hombro / 1 codo / 2 muñeca,
+  esquinas sub-píxel; DetectorColor = respaldo HSV con clic), `generar_marcadores.py`
+  (crea `docs/marcadores_aruco.pdf`, 6 cm + repuestos de 4 cm, regla de 10 cm; imprime el
+  patrón para dibujarlo a mano), `kalman_camara.py` (estado [θ1, ω1, θ2, ω2], H mide θ, q = r·(2π f_n)^4 con
   f_n 1.5/3/6 Hz, predice si no ve), `config_camara.py`.
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **26 pasan**.
+- Pruebas: `python -m pytest python/` → **28 pasan**.
 - Docs: `docs/00_git…`, `01_cinematica`, `02_conexiones`, `03_interfaz`,
   `04_captura_y_entregas`, `05_teleoperacion_camara`, `ENTREGAS`, `SUSTENTACION`;
   `datos/DICCIONARIO.md`; `datos/crudos/descartados/LEEME.md`.
@@ -162,16 +165,21 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   el brazo del usuario, vista desde ARRIBA de la mesa; IMU siguen en el robot. Opción 2
   (fusión cámara + giroscopios en el brazo humano) queda abierta según el profesor; el
   código está preparado (agregar filas de giro a H y R en `kalman_camara.py`).
-- Marcadores recomendados (mate, ~3 cm, encima del brazo): **hombro azul, codo verde,
-  muñeca fucsia/magenta**. Evitar rojo/naranja/amarillo/café (piel, madera), blanco/gris.
+- Marcadores: primero se probaron papeles de color (hombro azul, codo verde, muñeca fucsia).
+  2026-11-03: el usuario reportó que el **azul claro del hombro casi no se detectaba** y pidió
+  algo más robusto ("colores con recuadros") → se cambió a **ArUco** (modo por defecto).
+  Imprimir `docs/marcadores_aruco.pdf` a tamaño real, cuadros de 6 cm con margen blanco,
+  sobre cartón. Si el hombro no se ve, se usa su última posición (`RECORDAR_HOMBRO`).
+  Tecla D = diagnóstico (dibuja en rojo los candidatos no leídos). Colores: `--modo color`.
 - Comando: `python python/teleop_camara.py --video http://192.168.1.38:4747/video`
-  (+ `--puerto COM3` para mover el robot; arranca en PAUSA, tecla R). Teclas: L colores
-  (clic hombro, codo, muñeca), C pose de referencia (brazo estirado al frente = (90, 0)),
+  (+ `--puerto COM3` para mover el robot; arranca en PAUSA, tecla R). Teclas: D diagnóstico
+  ArUco, L colores (solo `--modo color`: clic hombro, codo, muñeca), C pose de referencia (brazo estirado al frente = (90, 0)),
   N medir R de la cámara (10 s quieto), F crudo↔Kalman, 1/2/3 Q, G grabar (datos/teleop,
   se sube solo), Q salir.
-- Estado: solo probado con video simulado. El usuario ya ve la cámara en el navegador y
-  estaba por recortar los papeles de colores. SIGUIENTE: correr el programa, tecla L,
-  verificar detección; luego C, N; luego con robot; luego grabar sesiones (tabla en
+- Estado: con colores corrió en vivo pero el hombro azul claro fallaba. ArUco probado solo
+  con imágenes sintéticas (incluida la hoja impresa reducida a ~44 px, oscura y borrosa).
+  SIGUIENTE: el usuario imprime la hoja, pega los cuadros, corre el programa y confirma
+  `aruco: hombro:si codo:si muneca:si`; luego C, N; luego con robot; luego grabar sesiones (tabla en
   docs/05: crudo vs Kalman lento/rápido + oclusión) y escribir `analisis_teleop.py`
   (suavidad de órdenes, retraso Kalman vs crudo, tiempo de cómputo, latencia).
 
@@ -197,3 +205,6 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
 - Nunca presentar datos sintéticos como reales (están en datos/sinteticos, marcados).
 - No borrar datos del usuario: mover a `descartados/` con explicación.
 - El .ino no se puede compilar aquí (no hay arduino-cli): revisar a mano y pedir errores.
+- En OpenCV 5 el texto de `putText` con grosor 3 sale más ancho que con grosor 1: el truco
+  de "contorno negro + texto blanco" se ve ilegible. Usar `_texto()` (fondo oscuro) de
+  `teleop_camara.py`.

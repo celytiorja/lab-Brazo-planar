@@ -40,3 +40,44 @@ def test_kalman_camara_sigue_rampa_y_predice_si_falta_medicion():
 
 def test_q_desde_f_n():
     assert q_desde_f_n(1 / (2 * math.pi), 2.0) == pytest.approx(2.0)
+
+
+# ---------------- ArUco ----------------
+def _escena_aruco(posiciones, lado=40, fondo=170):
+    """Imagen gris con un cuadro ArUco (con margen blanco) centrado en cada posición."""
+    import config_camara as CC
+    from generar_marcadores import imagen_marcador
+    img = np.full((480, 640, 3), fondo, np.uint8)
+    for nombre, (cx, cy) in posiciones.items():
+        m = cv2.resize(imagen_marcador(CC.ARUCO_IDS[nombre]), (lado, lado),
+                       interpolation=cv2.INTER_NEAREST)
+        borde = lado // 4
+        m = cv2.copyMakeBorder(m, borde, borde, borde, borde, cv2.BORDER_CONSTANT, value=255)
+        x0, y0 = cx - m.shape[1] // 2, cy - m.shape[0] // 2
+        img[y0:y0 + m.shape[0], x0:x0 + m.shape[1]] = m[..., None]
+    return img
+
+
+def test_aruco_encuentra_los_tres_aunque_haya_poca_luz():
+    from vision import DetectorAruco
+    pos = {"hombro": (320, 400), "codo": (320, 260), "muneca": (200, 260)}
+    img = _escena_aruco(pos)
+    oscura = (img * 0.35 + 15).astype(np.uint8)              # poca luz y poco contraste
+    for imagen in (img, oscura):
+        hallado = DetectorAruco().buscar(imagen)
+        for n, p in pos.items():
+            assert hallado[n] == pytest.approx(p, abs=1.5)
+    # Y los ángulos salen igual que con los colores: brazo arriba, antebrazo a la izq.
+    assert angulos_brazo(hallado["hombro"], hallado["codo"], hallado["muneca"]) == \
+        pytest.approx((90, 90), abs=1)
+
+
+def test_procesador_recuerda_el_hombro_si_se_tapa():
+    from teleop_camara import ProcesadorCamara
+    proc = ProcesadorCamara("aruco")
+    completo = _escena_aruco({"hombro": (320, 400), "codo": (320, 260), "muneca": (200, 260)})
+    sin_hombro = _escena_aruco({"codo": (320, 260), "muneca": (200, 260)})
+    assert proc.procesar(completo, 0.0)
+    assert proc.procesar(sin_hombro, 1 / 30)            # sigue viendo el brazo...
+    assert proc.hombro_recordado                         # ...con el hombro de memoria
+    assert proc.theta_crudo == pytest.approx((90, 90), abs=1)

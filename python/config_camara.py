@@ -1,8 +1,8 @@
 """Configuración de la teleoperación con cámara (Entrega 2, opción 1: solo cámara).
 
 El teléfono, sostenido ARRIBA de la mesa y mirando hacia abajo, ve tu brazo moverse
-en el plano de la mesa (el mismo plano horizontal del robot). Tres marcadores de
-color —hombro, codo y muñeca— dan los ángulos θ1 y θ2 de TU brazo.
+en el plano de la mesa (el mismo plano horizontal del robot). Tres marcadores
+—hombro, codo y muñeca— dan los ángulos θ1 y θ2 de TU brazo.
 """
 
 # ---------- Fuente de video ----------
@@ -14,6 +14,22 @@ ANCHO, ALTO = 640, 480          # se reduce el video a esto: más rápido de pro
 
 # ---------- Marcadores ----------
 MARCADORES = ("hombro", "codo", "muneca")
+
+# Cómo se encuentran:  "aruco" (cuadros impresos blanco/negro, RECOMENDADO) o "color".
+# Se puede cambiar sin tocar esto:  --modo color
+MODO_DETECCION = "aruco"
+
+# ArUco: diccionario 4×4 (casillas grandes -> se leen aunque el cuadro se vea pequeño).
+# Cada articulación tiene su número. Los cuadros se generan con generar_marcadores.py.
+ARUCO_DICCIONARIO = "DICT_4X4_50"
+ARUCO_IDS = {"hombro": 0, "codo": 1, "muneca": 2}
+ARUCO_LADO_CM = 6.0             # lado impreso (con la cámara a 60–80 cm se ve de ~35 px)
+
+# El hombro casi no se mueve: si un cuadro no se ve un momento, se usa su última
+# posición en vez de perder la medición completa.
+RECORDAR_HOMBRO = True
+
+# --- Solo modo "color" ---
 # Tolerancias alrededor del color que aprendes con un clic (escala HSV de OpenCV).
 TOL_TONO = 12                   # H va de 0 a 179
 TOL_SAT = 70                    # S de 0 a 255

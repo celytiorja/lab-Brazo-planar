@@ -2,14 +2,18 @@
 
 Requisitos:
   - Teléfono ARRIBA de la mesa, mirando hacia abajo, con la app DroidCam.
-  - 3 marcadores de color en tu brazo: HOMBRO, CODO y MUÑECA (colores distintos).
+  - 3 marcadores en tu brazo: HOMBRO, CODO y MUÑECA. Por defecto son cuadros ArUco
+    impresos (python python/generar_marcadores.py -> docs/marcadores_aruco.pdf).
+    Con  --modo color  se usan papeles de color (respaldo).
   - ESP32 con firmware/adquisicion (para mover el robot) y el Monitor Serie CERRADO.
 
     python python/teleop_camara.py --video http://192.168.1.23:4747/video --puerto COM3
     python python/teleop_camara.py --video 0                    (webcam, sin robot)
+    python python/teleop_camara.py --video 0 --modo color       (papeles de color)
 
 Teclas (con la ventana de video activa):
-  L  aprender colores: haz clic en hombro, codo y muñeca, en ese orden
+  D  diagnóstico (solo ArUco): dibuja en rojo los cuadros que ve pero NO logra leer
+  L  (solo modo color) aprender colores: clic en hombro, codo y muñeca, en ese orden
   C  pose de referencia: tu brazo ESTIRADO hacia adelante = robot en (90°, 0°)
   N  medir el ruido de la cámara: brazo QUIETO 10 s -> R del Kalman
   F  cambiar la fuente que mueve el robot: crudo (cámara) <-> Kalman
@@ -33,7 +37,7 @@ import config_imu as C
 import reporte as Rp
 from kalman_camara import KalmanCamara
 from servos import modelo_a_servo
-from vision import Marcador, angulos_brazo
+from vision import angulos_brazo, crear_detector
 
 CARPETA = Rp.RAIZ / "datos" / "teleop"
 ARCHIVO_RUIDO = CARPETA / "ruido_camara.json"
@@ -44,9 +48,12 @@ COLOR_DIBUJO = {"hombro": (255, 120, 0), "codo": (0, 200, 0), "muneca": (0, 0, 2
 class ProcesadorCamara:
     """Todo lo que pasa con cada cuadro, separado de la ventana (así se puede probar)."""
 
-    def __init__(self):
+    def __init__(self, modo=None):
         CARPETA.mkdir(parents=True, exist_ok=True)
-        self.marcadores = {n: Marcador(n) for n in CC.MARCADORES}
+        self.detector = crear_detector(modo)
+        self.pos = {n: None for n in CC.MARCADORES}      # posiciones del último cuadro
+        self.hombro_recordado = False                     # True: se usó la última posición
+        self._hombro_ultimo = None
         self.offset = np.zeros(2)
         self.r_camara = np.array([CC.R_CAMARA_POR_DEFECTO] * 2)
         self.origen_r = "valor por defecto (aún no medido: tecla N)"
@@ -68,8 +75,8 @@ class ProcesadorCamara:
     def config(self):
         return CC.CONFIGS_Q_CAMARA[self.i_config]
 
-    def colores_listos(self):
-        return all(m.calibrado for m in self.marcadores.values())
+    def detector_listo(self):
+        return self.detector.listo
 
     def reiniciar_kalman(self, theta0):
         self.kalman = KalmanCamara(theta0, self.r_camara, self.config["f_n_hz"])
@@ -98,8 +105,15 @@ class ProcesadorCamara:
         """Un cuadro de video. Devuelve True si se vieron los 3 marcadores."""
         dt = 0.0 if self.t_ant is None else t - self.t_ant
         self.t_ant = t
-        hsv = cv2.cvtColor(imagen_bgr, cv2.COLOR_BGR2HSV)
-        pos = {n: m.buscar(hsv) for n, m in self.marcadores.items()}
+        pos = self.detector.buscar(imagen_bgr)
+        # El hombro casi no se mueve: si no se ve en este cuadro, se usa el último visto.
+        self.hombro_recordado = False
+        if pos["hombro"] is not None:
+            self._hombro_ultimo = pos["hombro"]
+        elif CC.RECORDAR_HOMBRO and self._hombro_ultimo is not None:
+            pos["hombro"] = self._hombro_ultimo
+            self.hombro_recordado = True
+        self.pos = pos
         self.visto = all(p is not None for p in pos.values())
         medido = None
         if self.visto:
@@ -153,7 +167,8 @@ class Sesion:
         self.meta = {"fecha": datetime.now().isoformat(timespec="seconds"),
                      "r_camara": proc.r_camara.tolist(), "origen_r": proc.origen_r,
                      "configs_q": CC.CONFIGS_Q_CAMARA, "offset": proc.offset.tolist(),
-                     "fuente_video": str(CC.FUENTE_VIDEO), "commit": Rp.commit_actual()}
+                     "fuente_video": str(CC.FUENTE_VIDEO),
+                     "modo_deteccion": proc.detector.modo, "commit": Rp.commit_actual()}
         self.filas = 0
 
     def agregar(self, proc, enviando, cmd):
@@ -175,13 +190,27 @@ class Sesion:
 
 
 def dibujar(img, proc, estado):
-    for n, m in proc.marcadores.items():
-        if m.pos is not None:
-            cv2.circle(img, (int(m.pos[0]), int(m.pos[1])), 9, COLOR_DIBUJO[n], 2)
-    p = [proc.marcadores[n].pos for n in CC.MARCADORES]
+    det = proc.detector
+    if det.modo == "aruco":
+        if estado.get("diagnostico") and len(det.rechazados):
+            # Cuadros que "parecen" marcador pero no se pudieron leer: muy pequeños,
+            # borrosos, doblados o sin margen blanco alrededor.
+            cv2.polylines(img, [np.int32(c).reshape(-1, 1, 2) for c in det.rechazados],
+                          True, (0, 0, 255), 1)
+        for n, c in det.esquinas.items():
+            cv2.polylines(img, [np.int32(c).reshape(-1, 1, 2)], True, COLOR_DIBUJO[n], 2)
+    for n in CC.MARCADORES:
+        p = proc.pos.get(n)
+        if p is not None:
+            recordado = n == "hombro" and proc.hombro_recordado
+            cv2.circle(img, (int(p[0]), int(p[1])), 9, COLOR_DIBUJO[n], 1 if recordado else 2)
+            cv2.putText(img, n + (" (memoria)" if recordado else ""), (int(p[0]) + 12, int(p[1]) - 8),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, COLOR_DIBUJO[n], 1)
+    p = [proc.pos.get(n) for n in CC.MARCADORES]
     if all(x is not None for x in p):
         pts = [(int(x), int(y)) for x, y in p]
         cv2.polylines(img, [np.array(pts)], False, (0, 255, 255), 2)
+    vistos = "  ".join(f"{n}:{'si' if proc.pos.get(n) is not None else 'NO'}" for n in CC.MARCADORES)
     lineas = [
         f"crudo:  t1={_g(proc.theta_crudo, 0)}  t2={_g(proc.theta_crudo, 1)}   "
         f"{'VISTO' if proc.visto else 'NO VISTO (Kalman predice)'}",
@@ -191,16 +220,25 @@ def dibujar(img, proc, estado):
         f"{estado['fps']:.0f} fps   kalman {proc.t_calc_us:.0f} us",
         f"R camara: sigma = {np.sqrt(proc.r_camara[0]):.2f}, {np.sqrt(proc.r_camara[1]):.2f} deg "
         f"({proc.origen_r})",
+        f"{det.modo}: {vistos}",
     ]
     if estado["msg"]:
         lineas.append(estado["msg"])
     if estado["grabando"]:
         lineas.append("REC  " + estado["grabando"])
     for i, texto in enumerate(lineas):
-        cv2.putText(img, texto, (8, 20 + 20 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 3)
-        cv2.putText(img, texto, (8, 20 + 20 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-    cv2.putText(img, "L colores  C pose  N ruido  F fuente  1/2/3 Q  R robot  G grabar  Q salir",
-                (8, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+        _texto(img, texto, (8, 20 + 20 * i), 0.5)
+    teclas = "L colores" if det.modo == "color" else "D diagnostico"
+    _texto(img, f"{teclas}  C pose  N ruido  F fuente  1/2/3 Q  R robot  G grabar  Q salir",
+           (8, img.shape[0] - 10), 0.45)
+
+
+def _texto(img, texto, org, escala, color=(255, 255, 255)):
+    """Texto con un rectángulo oscuro detrás: se lee sobre cualquier fondo."""
+    (ancho, alto), base = cv2.getTextSize(texto, cv2.FONT_HERSHEY_SIMPLEX, escala, 1)
+    x, y = org
+    cv2.rectangle(img, (x - 3, y - alto - 3), (x + ancho + 3, y + base + 1), (0, 0, 0), -1)
+    cv2.putText(img, texto, org, cv2.FONT_HERSHEY_SIMPLEX, escala, color, 1)
 
 
 def _g(v, i):
@@ -212,6 +250,8 @@ def main():
     ap.add_argument("--video", default=str(CC.FUENTE_VIDEO),
                     help="número de cámara (0, 1...) o URL de DroidCam (http://IP:4747/video)")
     ap.add_argument("--puerto", default="", help="puerto del ESP32 (p. ej. COM3); vacío = sin robot")
+    ap.add_argument("--modo", default=CC.MODO_DETECCION, choices=["aruco", "color"],
+                    help="marcadores: cuadros ArUco impresos (por defecto) o papeles de color")
     args = ap.parse_args()
     fuente = int(args.video) if args.video.isdigit() else args.video
     CC.FUENTE_VIDEO = fuente
@@ -232,18 +272,19 @@ def main():
         conexion.conectar(args.puerto, C.BAUDIOS_ADQUISICION)
         print(f"Conectado a {args.puerto}. El robot arranca en PAUSA: tecla R para enviar.")
 
-    proc = ProcesadorCamara()
-    estado = {"enviando": False, "fps": 0.0, "msg": "", "grabando": ""}
+    proc = ProcesadorCamara(args.modo)
+    estado = {"enviando": False, "fps": 0.0, "msg": "", "grabando": "", "diagnostico": False}
     sesion = None
     ultimo_cmd, t_ultimo_envio = None, 0.0
-    clics = {"pendientes": [] if proc.colores_listos() else list(CC.MARCADORES)}
+    clics = {"pendientes": [] if proc.detector_listo() else list(CC.MARCADORES)}
     ultima_imagen = {"img": None}
 
     def al_clic(evento, x, y, *_):
         if evento == cv2.EVENT_LBUTTONDOWN and clics["pendientes"] and ultima_imagen["img"] is not None:
             nombre = clics["pendientes"].pop(0)
-            proc.marcadores[nombre].aprender(ultima_imagen["img"], x, y)
-            print(f"Color de {nombre} aprendido: HSV = {proc.marcadores[nombre].hsv}")
+            marcador = proc.detector.marcadores[nombre]
+            marcador.aprender(ultima_imagen["img"], x, y)
+            print(f"Color de {nombre} aprendido: HSV = {marcador.hsv}")
 
     cv2.namedWindow("Teleoperacion")
     cv2.setMouseCallback("Teleoperacion", al_clic)
@@ -275,6 +316,10 @@ def main():
             estado["msg"] = "Midiendo ruido de la camara: brazo QUIETO..."
         elif estado["msg"].startswith("Haz clic"):
             estado["msg"] = "Colores listos. Brazo estirado al frente y tecla C."
+        elif proc.detector.modo == "aruco" and proc.theta_crudo is None:
+            estado["msg"] = "Muestra los 3 cuadros: 0 hombro, 1 codo, 2 muneca"
+        elif estado["msg"].startswith("Muestra"):
+            estado["msg"] = "Te veo. Brazo estirado al frente y tecla C."
 
         # Enviar al robot
         cmd = None
@@ -299,8 +344,10 @@ def main():
         tecla = cv2.waitKey(1) & 0xFF
         if tecla in (ord("q"), 27):
             break
-        elif tecla == ord("l"):
+        elif tecla == ord("l") and proc.detector.modo == "color":
             clics["pendientes"] = list(CC.MARCADORES)
+        elif tecla == ord("d"):
+            estado["diagnostico"] = not estado["diagnostico"]
         elif tecla == ord("c"):
             estado["msg"] = ("Pose de referencia guardada: ahora vale (90, 0)" if proc.calibrar_pose()
                              else "No veo los 3 marcadores")

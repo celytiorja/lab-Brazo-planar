@@ -31,6 +31,7 @@ python/
   interfaz.py                    ← interfaz gráfica que mueve el brazo real (sin IMU)
   interfaz_imu.py                ← interfaz con las IMU en vivo y grabación de capturas
   teleop_camara.py               ← teleoperación con cámara + Kalman (vision.py, kalman_camara.py)
+  generar_marcadores.py          ← hoja de cuadros ArUco para imprimir (docs/marcadores_aruco.pdf)
   analisis_e1.py / analisis_e2.py← resultados de la Entrega 1 y 2 (Kalman)
   analisis_e1_extra.py           ← sensibilidad, sesgo, Δt, estructura de R, repetibilidad...
   verificacion_cinematica.py     ← punto 1: error del brazo real medido en papel
