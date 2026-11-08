@@ -39,6 +39,8 @@ Para llenar la columna **"Archivo, enlace, página o ubicación"** de cada instr
 
 ## Entrega 2: filtro de Kalman
 
+> Guía completa para sustentar (criterio por criterio, con tus números): `docs/GUIA_ENTREGA2.md`.
+
 | Código | Evidencia | Dónde está | Criterio |
 |---|---|---|---|
 | **E5** | Código de Kalman y comparación; estado, mediciones, F, H, Q, R, inicialización, parámetros | Ecuaciones: `python/kalman.py`. Modelo (estado, F, Q, H): `python/modelo_kalman.py`. Configuración (3 Q, P0, regla): `python/config_kalman.py`. R: `resultados/<origen>/e1/R.json`. Comparación: `python/analisis_e2.py`, `python/estimadores.py` | C1-N3…N5 |

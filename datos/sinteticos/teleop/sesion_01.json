@@ -1,25 +1,25 @@
 {
-  "fecha": "2026-11-03T01:31:44",
+  "fecha": "2026-11-08T18:16:27",
   "r_camara": [
     0.0764378796842431,
     0.07688922393409109
   ],
-  "origen_r": "medido 2026-11-03T01:31:44",
+  "origen_r": "medido 2026-11-08T18:16:27",
   "configs_q": [
     {
       "nombre": "Q_baja",
       "f_n_hz": 1.5,
-      "razon": "muy suave; retraso ≈ 150 ms"
+      "razon": "muy suave: ruido x0.53, temblor 8 Hz x0.27; retraso ~40-60 ms a 1-2 Hz"
     },
     {
       "nombre": "Q_media",
       "f_n_hz": 3.0,
-      "razon": "sigue movimientos de hasta ~2 Hz; retraso ≈ 75 ms"
+      "razon": "equilibrio: ruido x0.70, temblor 8 Hz x0.49; retraso < 16 ms hasta 2 Hz"
     },
     {
       "nombre": "Q_alta",
       "f_n_hz": 6.0,
-      "razon": "casi sin retraso (≈ 37 ms); filtra poco"
+      "razon": "casi sin retraso (< 3 ms a 2 Hz); filtra poco: ruido x0.86"
     }
   ],
   "offset": [
@@ -30,7 +30,7 @@
   "modo_deteccion": "aruco",
   "periodo_ordenes_s": 0.04,
   "cambio_min_grados": 1,
-  "commit": "019d796+cambios_sin_commit",
+  "commit": "2aedd39+cambios_sin_commit",
   "cuadros": 900,
   "muestras_robot": 0,
   "SINTETICO": "Video generado por simular_teleop.py: NO es una medición."

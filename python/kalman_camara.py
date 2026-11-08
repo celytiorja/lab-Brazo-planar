@@ -33,9 +33,36 @@ H_CAMARA = np.array([[1.0, 0.0, 0.0, 0.0],
                      [0.0, 0.0, 1.0, 0.0]])
 
 
-def q_desde_f_n(f_n_hz, r):
-    """q que da una frecuencia natural f_n al Kalman en régimen permanente."""
-    return r * (2 * math.pi * f_n_hz) ** 4
+def q_desde_f_n(f_n_hz, r, dt=None):
+    """q que da una frecuencia natural f_n al Kalman en régimen permanente.
+
+    r es la varianza de la cámara POR CUADRO; r·Δt es su densidad espectral, que es
+    lo que se compara con q (densidad del "empujón" de aceleración, por segundo).
+    """
+    dt = 1.0 / CC.FPS_NOMINAL if dt is None else dt
+    return r * dt * (2 * math.pi * f_n_hz) ** 4
+
+
+def caracterizar_q(f_n_hz, dt=None, frecuencias=(1.0, 2.0, 8.0)):
+    """Comportamiento del filtro REAL con esa f_n (simulándolo, no con fórmulas):
+    factor de ruido (desviación de la salida / de la entrada con ruido blanco) y, para
+    senos de cada frecuencia, ganancia y retraso en ms. No depende de r."""
+    dt = 1.0 / CC.FPS_NOMINAL if dt is None else dt
+    r = 1.0
+    rng = np.random.default_rng(0)
+    kf = KalmanCamara([0, 0], r, f_n_hz)
+    salida = [kf.paso(dt, (rng.normal(0, 1.0), 0.0))[0][0] for _ in range(3000)]
+    res = {"f_n_hz": f_n_hz, "factor_ruido": float(np.std(salida[500:]))}
+    for f in frecuencias:
+        kf = KalmanCamara([0, 0], r, f_n_hz)
+        t = np.arange(0, 20, dt)
+        y = np.array([kf.paso(dt, (10 * math.sin(2 * math.pi * f * ti), 0.0))[0][0] for ti in t])
+        mitad = len(t) // 2
+        A = np.column_stack([np.sin(2 * math.pi * f * t[mitad:]), np.cos(2 * math.pi * f * t[mitad:])])
+        a, b = np.linalg.lstsq(A, y[mitad:], rcond=None)[0]
+        res[f"ganancia_{f:g}Hz"] = float(np.hypot(a, b) / 10)
+        res[f"retraso_ms_{f:g}Hz"] = float(-math.degrees(math.atan2(b, a)) / 360 / f * 1000)
+    return res
 
 
 class KalmanCamara:

@@ -19,6 +19,7 @@ docs/
   SUSTENTACION.md                ← qué mostrar y qué decir
   ENTREGAS.md                    ← localizadores E1–E9 y respuestas de comprobación individual
   PRUEBA_FINAL.md                ← ⭐ los 10 minutos antes de entregar la E2 (teleoperación)
+  GUIA_ENTREGA2.md               ← ⭐ cada criterio de la E2: evidencia, qué decir, preguntas
 firmware/
   prueba_servos/                 ← sketch para probar solo los dos servos
   prueba_hardware/               ← sketch para probar servos + IMU juntos
@@ -33,7 +34,8 @@ python/
   interfaz_imu.py                ← interfaz con las IMU en vivo y grabación de capturas
   teleop_camara.py               ← teleoperación con cámara + Kalman (vision.py, kalman_camara.py)
   generar_marcadores.py          ← hoja de cuadros ArUco para imprimir (docs/marcadores_aruco.pdf)
-  video_rapido.py                ← lectura del video sin retraso acumulado
+  video_rapido.py                ← lectura del video sin retraso acumulado (se reconecta solo)
+  panel_teleop.py                ← pantalla de la teleoperación (panel + gráficas en vivo)
   analisis_teleop.py             ← E8: crudo vs Kalman, oclusiones, tiempos, retraso del robot
   simular_teleop.py              ← prueba completa con video sintético (verdad conocida)
   prueba_latencia_video.py       ← mide por qué "se trababa" (antes 2 s, ahora ~17 ms)

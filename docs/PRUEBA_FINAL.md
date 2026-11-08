@@ -39,12 +39,26 @@ En el ping de antes la WiFi tardaba 250–550 ms: **demasiado** para teleoperar.
 ```
 .venv\Scripts\activate
 git pull
-python python/teleop_camara.py --video http://IP_DEL_TELEFONO:4747/video --puerto COM3
+python python/teleop_camara.py --video IP_DEL_TELEFONO --puerto auto
 ```
 
-En la terminal debe decir `Video abierto con: MJPEG directo (sin búfer)`.
-Se abre la ventana **Teleoperacion**. Los 3 cuadros salen enmarcados en azul, verde y rojo,
-unidos por una línea amarilla, y debajo dice `aruco: hombro:si codo:si muneca:si`.
+- `--video` acepta la IP sola, por ejemplo `--video 192.168.43.1`; el programa completa
+  `http://IP:4747/video`.
+- `--puerto auto` busca el ESP32 solo. Si no lo encuentra, te muestra la lista de puertos y
+  usas `--puerto COM5`, con el tuyo.
+
+En la terminal debe decir `Video abierto con: MJPEG directo (sin búfer)` y `Robot en COMx`.
+Se abre la ventana **Teleoperacion**:
+
+- **Izquierda, el video:** tus 3 cuadros enmarcados (azul hombro, verde codo, rojo muñeca) y
+  unidos por una línea amarilla. Abajo, en amarillo, siempre aparece **el siguiente paso** que
+  tienes que hacer.
+- **Derecha, el panel:**
+  - fps y tiempos;
+  - los marcadores H, C y M (verde = visto, amarillo = recordado o seguido, rojo = no visto);
+  - θ1 y θ2, crudo (naranja) y Kalman (azul);
+  - **dos gráficas en vivo** de los últimos 6 s;
+  - el estado del robot (`fw 1.2 IMU ok`) y Kalman (Q, f_n, R).
 
 ### 3. Calibrar (1 min)
 
@@ -52,7 +66,10 @@ unidos por una línea amarilla, y debajo dice `aruco: hombro:si codo:si muneca:s
 |---|---|---|
 | **C** | brazo **estirado al frente**, quieto | "Pose de referencia guardada": ahora vale (90, 0) |
 | **N** | brazo **quieto 10 s** | "Midiendo ruido…" y luego `R camara: sigma = …` (medido) |
-| **R** | con el brazo en la pose de inicio | `ENVIANDO`: el robot empieza a copiarte |
+| **R** | con el brazo en la pose de inicio | panel: `mueve: KALMAN`. El robot se acerca despacio a tu pose (1,5 s) y luego te copia |
+
+**Si el robot gira al revés** (mueves el brazo a tu izquierda y el robot va a la derecha), la
+cámara te ve en espejo: pulsa **M** y repite **C**.
 
 ### 4. Sesión 1: robot movido con la cámara CRUDA (1 min)
 
@@ -89,7 +106,9 @@ git push origin entrega2
 |---|---|
 | No pude imprimir | Dibuja los 3 cuadros a mano, o usa papeles de color: `--modo color` y tecla **L** (clic en hombro, codo y muñeca) |
 | La cámara no abre | ¿DroidCam abierto? ¿navegador cerrado? ¿pusiste `:4747`? ¿la IP es la nueva? |
-| Va lento o atrasado | Usa el hotspot (paso 1). Mira `proceso X ms` arriba: debe ser mucho menor que 33 ms |
+| Va lento o atrasado | Usa el hotspot (paso 1). En el panel, `proceso X ms` debe ser mucho menor que 33 ms y los fps cercanos a 30 |
+| El robot gira al revés | Tecla **M** (espejo) y luego **C** otra vez |
+| La subida a GitHub falla | Los datos quedan en tu PC. Después escribe `git push` en la terminal (la primera vez pide iniciar sesión) |
 | Un cuadro se pierde | Tecla **D**: se dibujan en rojo los cuadros que ve pero no lee. Acerca el teléfono, más luz, sin brillo |
 | El robot no se conecta | Monitor Serie de Arduino **cerrado**; ¿COM3? Sin robot igual se puede grabar (quita `--puerto COM3`): el análisis sale sin la parte del robot |
 | Nada funciona con la cámara | Demostración con **video sintético** (decirlo así): `python python/simular_teleop.py --video` y luego `python python/teleop_camara.py --video datos/sinteticos/teleop/video_sintetico.mp4 --puerto COM3`. El robot copia el brazo simulado |

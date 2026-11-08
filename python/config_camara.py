@@ -47,15 +47,25 @@ ESPEJO = False
 
 # ---------- Kalman de la cámara ----------
 # Estado por articulación: [θ, ω]; medición: θ de la cámara (H = [1, 0]).
-# En régimen permanente este Kalman es un filtro de 2.º orden con frecuencia natural
-#     f_n = (q / r)^(1/4) / (2π)     ->     q = r · (2π f_n)^4
-# y retraso aproximado a baja frecuencia ≈ √2 / (2π f_n).
-# El movimiento voluntario del brazo humano está por debajo de ~2 Hz.
+# En régimen permanente este Kalman es un filtro paso bajo de 2.º orden con
+# frecuencia natural f_n:
+#     ω_n = 2π f_n = (q / r_c)^(1/4),   r_c = r · Δt   ->   q = r · Δt · (2π f_n)^4
+# (r = varianza POR CUADRO de la cámara, medida con la tecla N; r·Δt la convierte en
+# densidad, que es lo que se compara con q, que es densidad por segundo.)
+# Como q es proporcional a r, el comportamiento depende SOLO de f_n (no de cuánto
+# tiemble la cámara): la R medida decide la consistencia (NIS), no la suavidad.
+# Contenido del movimiento: voluntario < ~2 Hz; temblor fisiológico ~8–12 Hz.
+# Números de cada configuración (simulación del filtro real a 30 cuadros/s,
+# kalman_camara.caracterizar_q; se regeneran en resultados/<origen>/teleop/):
 CONFIGS_Q_CAMARA = [
-    {"nombre": "Q_baja", "f_n_hz": 1.5, "razon": "muy suave; retraso ≈ 150 ms"},
-    {"nombre": "Q_media", "f_n_hz": 3.0, "razon": "sigue movimientos de hasta ~2 Hz; retraso ≈ 75 ms"},
-    {"nombre": "Q_alta", "f_n_hz": 6.0, "razon": "casi sin retraso (≈ 37 ms); filtra poco"},
+    {"nombre": "Q_baja", "f_n_hz": 1.5,
+     "razon": "muy suave: ruido x0.53, temblor 8 Hz x0.27; retraso ~40-60 ms a 1-2 Hz"},
+    {"nombre": "Q_media", "f_n_hz": 3.0,
+     "razon": "equilibrio: ruido x0.70, temblor 8 Hz x0.49; retraso < 16 ms hasta 2 Hz"},
+    {"nombre": "Q_alta", "f_n_hz": 6.0,
+     "razon": "casi sin retraso (< 3 ms a 2 Hz); filtra poco: ruido x0.86"},
 ]
+FPS_NOMINAL = 30.0              # Δt nominal para convertir r en densidad
 R_CAMARA_POR_DEFECTO = 1.0      # [°²] hasta que midas el ruido real (tecla N)
 P0_DIAG = {"theta": 10.0**2, "omega": 50.0**2}
 # Oclusión (no se ve el brazo): Kalman predice con velocidad constante hasta

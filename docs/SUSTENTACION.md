@@ -49,6 +49,8 @@ con solo giroscopio la deriva no es observable.
    amplitud que el servo no alcanza). Es una limitación del modelo y de R, y propone R mayor en
    movimiento o una referencia absoluta.
 
+## ⭐⭐ Guía completa de la Entrega 2: `docs/GUIA_ENTREGA2.md` (criterios, guion, preguntas)
+
 ## ⭐ Teleoperación con cámara (E8): ver `docs/PRUEBA_FINAL.md`
 
 - **Cadena:** teléfono (DroidCam) → PC (ArUco → θ1, θ2 → Kalman) → ESP32 → servos. Las IMU del
@@ -59,7 +61,7 @@ con solo giroscopio la deriva no es observable.
   Ahora siempre se usa el más nuevo: unos 17 ms (`python/prueba_latencia_video.py`).
 - **Kalman aquí:**
   - Estado [θ1, ω1, θ2, ω2], H mide θ y R es la varianza medida con el brazo quieto (tecla N).
-  - Q sale de la frecuencia natural f_n: q = r·(2π f_n)⁴.
+  - Q sale de la frecuencia natural f_n: q = r·Δt·(2π f_n)⁴ (ver `configuraciones_q_camara.md`).
   - **Medición parcial:** si la mano tapa la muñeca, H se queda con la fila de θ1. θ1 sigue
     medido y θ2 se predice.
   - En simulación, el error de θ1 durante la oclusión baja de 19° (cámara congelada) a 0,3°.

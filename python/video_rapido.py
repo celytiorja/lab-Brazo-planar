@@ -55,9 +55,11 @@ class LectorVideo:
             self._periodo = 1.0 / fps if fps and fps > 0 else 1 / 30
             self._t_archivo = None
             return
+        self._timeout_s = timeout_s
+        self.reconexiones = 0
         if self.es_red:
             try:
-                self._resp = urllib.request.urlopen(fuente, timeout=timeout_s)
+                self._resp = self._abrir_url()
                 self.metodo = "MJPEG directo (sin búfer)"
                 objetivo = self._bucle_mjpeg
             except Exception:
@@ -70,6 +72,11 @@ class LectorVideo:
             self._hilo.start()
 
     # ------------------------------------------------------------ apertura
+    def _abrir_url(self):
+        # Sin proxy: DroidCam está en la red local (un proxy del sistema la haría fallar).
+        abridor = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        return abridor.open(self.fuente, timeout=self._timeout_s)
+
     def _abrir_opencv(self):
         if self.es_red:
             # Pedirle a FFmpeg que no guarde cuadros (menos retraso).
@@ -95,16 +102,24 @@ class LectorVideo:
             self._cond.notify_all()
 
     def _bucle_mjpeg(self):
+        """Lee el chorro MJPEG. Si se corta (WiFi, teléfono bloqueado...), se reconecta solo."""
         buf = b""
-        leer = getattr(self._resp, "read1", None) or self._resp.read
+        t_ultimo_dato = time.perf_counter()
         while self._vivo:
             try:
+                leer = getattr(self._resp, "read1", None) or self._resp.read
                 trozo = leer(65536)
             except Exception:
                 trozo = b""
             if not trozo:
-                time.sleep(0.05)
+                if time.perf_counter() - t_ultimo_dato > 1.0:
+                    self._reconectar()
+                    buf = b""
+                    t_ultimo_dato = time.perf_counter()
+                else:
+                    time.sleep(0.02)
                 continue
+            t_ultimo_dato = time.perf_counter()
             buf += trozo
             fin = buf.rfind(FIN_JPEG)
             if fin == -1:
@@ -122,12 +137,33 @@ class LectorVideo:
                 self._guardar(buf[ini:fin + 2], time.perf_counter())
             buf = buf[fin + 2:]
 
+    def _reconectar(self):
+        try:
+            self._resp.close()
+        except Exception:
+            pass
+        while self._vivo:
+            try:
+                self._resp = self._abrir_url()
+                self.reconexiones += 1
+                return
+            except Exception:
+                time.sleep(1.0)                    # el teléfono aún no responde: reintentar
+
     def _bucle_opencv(self):
+        fallos = 0
         while self._vivo:
             ok, img = self._cam.read()
             if not ok:
+                fallos += 1
+                if fallos > 40 and not self.es_archivo:      # ~2 s sin cuadros: reabrir
+                    self._cam.release()
+                    self._cam = cv2.VideoCapture(self.fuente)
+                    self.reconexiones += 1
+                    fallos = 0
                 time.sleep(0.05)
                 continue
+            fallos = 0
             self._guardar(img, time.perf_counter())
 
     # ------------------------------------------------------------ uso

@@ -15,6 +15,7 @@ Las capturas nunca chocan: cada una tiene un nombre nuevo.
 
 Si no hay internet, los commits quedan en tu PC y se suben en la próxima captura.
 """
+import os
 import subprocess
 import threading
 
@@ -24,8 +25,15 @@ _candado = threading.Lock()
 
 
 def _git(*args):
-    r = subprocess.run(["git", *args], cwd=Rp.RAIZ, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace")
+    # GIT_TERMINAL_PROMPT=0: si GitHub pide usuario/contraseña por la terminal, falla al
+    # instante en vez de quedarse esperando para siempre (la ventana de inicio de sesión de
+    # Windows sí aparece). timeout: sin internet, no colgar la interfaz.
+    entorno = dict(os.environ, GIT_TERMINAL_PROMPT="0")
+    try:
+        r = subprocess.run(["git", *args], cwd=Rp.RAIZ, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", env=entorno, timeout=120)
+    except subprocess.TimeoutExpired:
+        return 1, f"git {args[0]} tardó más de 2 min (¿sin internet?)"
     return r.returncode, (r.stdout + r.stderr).strip()
 
 

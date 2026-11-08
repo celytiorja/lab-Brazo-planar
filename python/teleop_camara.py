@@ -7,20 +7,25 @@ Requisitos:
     Con  --modo color  se usan papeles de color (respaldo).
   - ESP32 con firmware/adquisicion (para mover el robot) y el Monitor Serie CERRADO.
 
-    python python/teleop_camara.py --video http://192.168.1.23:4747/video --puerto COM3
+    python python/teleop_camara.py --video 192.168.1.38 --puerto auto
+    python python/teleop_camara.py --video http://192.168.1.38:4747/video --puerto COM5
     python python/teleop_camara.py --video 0                    (webcam, sin robot)
     python python/teleop_camara.py --video 0 --modo color       (papeles de color)
 
-Teclas (con la ventana de video activa):
-  D  diagnóstico (solo ArUco): dibuja en rojo los cuadros que ve pero NO logra leer
-  L  (solo modo color) aprender colores: clic en hombro, codo y muñeca, en ese orden
+  --video acepta la IP sola (se completa a http://IP:4747/video).
+  --puerto auto busca el ESP32 solo.
+
+Teclas (con la ventana activa; mayúscula o minúscula da igual):
   C  pose de referencia: tu brazo ESTIRADO hacia adelante = robot en (90°, 0°)
   N  medir el ruido de la cámara: brazo QUIETO 10 s -> R del Kalman
+  R  ENVIAR al robot: activar / pausar (arranca en pausa; al activar, arranque suave)
   F  cambiar la fuente que mueve el robot: crudo (cámara) <-> Kalman
-  1 2 3  Q_baja / Q_media / Q_alta
-  R  ENVIAR al robot: activar / pausar (arranca en pausa, por seguridad)
   G  grabar la sesión: iniciar / detener (datos/teleop/, se sube a GitHub sola)
-  Q o Esc  salir (si grabaste sesiones, se analizan y se suben solas)
+  1 2 3  Q_baja / Q_media / Q_alta
+  M  espejo: si al mover el brazo a la izquierda el robot va a la derecha
+  D  diagnóstico (solo ArUco): dibuja en rojo los cuadros que ve pero NO logra leer
+  L  (solo modo color) aprender colores: clic en hombro, codo y muñeca, en ese orden
+  Q o Esc (o cerrar la ventana)  salir: si grabaste sesiones, se analizan y se suben
 
 Qué se guarda en cada sesión (datos/teleop/sesion_XX.csv, un renglón por cuadro):
   ángulos crudos y de Kalman, si se vieron los marcadores, la orden al robot, y los
@@ -31,6 +36,7 @@ Qué se guarda en cada sesión (datos/teleop/sesion_XX.csv, un renglón por cuad
 import argparse
 import csv
 import json
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -43,6 +49,7 @@ import config_imu as C
 import reporte as Rp
 from grabador import parsear_linea_datos
 from kalman_camara import KalmanCamara
+from panel_teleop import AMARILLO, ROJO, VERDE, Panel
 from servos import modelo_a_servo
 from tiempo_real import valores_a_fisico
 from video_rapido import LectorVideo
@@ -51,7 +58,10 @@ from vision import angulos_brazo, crear_detector
 CARPETA = Rp.RAIZ / "datos" / "teleop"
 ARCHIVO_RUIDO = CARPETA / "ruido_camara.json"
 CUADROS_RUIDO = 300                      # ~10 s a 30 cuadros/s
-COLOR_DIBUJO = {"hombro": (255, 120, 0), "codo": (0, 200, 0), "muneca": (0, 0, 255)}
+VENTANA = "Teleoperacion"
+DT_REINICIO_S = 0.7          # si pasan más de esto sin cuadros, Kalman reinicia en la medición
+ARRANQUE_SUAVE_S = 1.5       # al pulsar R: durante este tiempo el robot va despacio a tu pose
+PASO_ARRANQUE_GRADOS = 4     # máximo cambio por orden durante el arranque suave
 
 
 class ProcesadorCamara:
@@ -65,6 +75,7 @@ class ProcesadorCamara:
         self.hombro_recordado = False                     # True: se usó la última posición
         self._hombro_ultimo = None
         self.offset = np.zeros(2)
+        self.pose_calibrada = False
         self.r_camara = np.array([CC.R_CAMARA_POR_DEFECTO] * 2)
         self.origen_r = "valor por defecto (aún no medido: tecla N)"
         if self.archivo_ruido.exists():
@@ -104,7 +115,9 @@ class ProcesadorCamara:
         if self.theta_crudo is None:
             return False
         self.offset = np.array([90.0, 0.0]) - (self.theta_crudo - self.offset)
+        self.theta_crudo = np.array([90.0, 0.0])
         self.reiniciar_kalman(np.array([90.0, 0.0]))
+        self.pose_calibrada = True
         return True
 
     def empezar_medir_ruido(self):
@@ -113,6 +126,10 @@ class ProcesadorCamara:
     @property
     def midiendo_ruido(self):
         return self._ruido is not None
+
+    @property
+    def progreso_ruido(self):
+        return 0.0 if self._ruido is None else len(self._ruido) / CUADROS_RUIDO
 
     def procesar(self, imagen_bgr, t):
         """Un cuadro de video. Devuelve True si se vieron los 3 marcadores."""
@@ -151,8 +168,12 @@ class ProcesadorCamara:
                 self._ruido.append(self.theta_crudo.copy())
                 if len(self._ruido) >= CUADROS_RUIDO:
                     self._terminar_ruido()
+        if self.kalman is not None and dt > DT_REINICIO_S and self.visto:
+            # Se cortó el video un buen rato: predecir tanto tiempo no tiene sentido.
+            self.reiniciar_kalman(medido)
+            dt = 0.0
         if self.kalman is None:
-            if medido is None:
+            if medido is None or not self.visto:
                 return False
             self.reiniciar_kalman(medido)
         t0 = time.perf_counter()
@@ -267,213 +288,282 @@ def guia_grabacion(segundos):
     return "listo: tecla G para terminar"
 
 
-def dibujar(img, proc, estado):
-    det = proc.detector
-    if det.modo == "aruco":
-        if estado.get("diagnostico") and len(det.rechazados):
-            # Cuadros que "parecen" marcador pero no se pudieron leer: muy pequeños,
-            # borrosos, doblados o sin margen blanco alrededor.
-            cv2.polylines(img, [np.int32(c).reshape(-1, 1, 2) for c in det.rechazados],
-                          True, (0, 0, 255), 1)
-        for n, c in det.esquinas.items():
-            cv2.polylines(img, [np.int32(c).reshape(-1, 1, 2)], True, COLOR_DIBUJO[n], 2)
-    for n in CC.MARCADORES:
-        p = proc.pos.get(n)
-        if p is not None:
-            recordado = n == "hombro" and proc.hombro_recordado
-            cv2.circle(img, (int(p[0]), int(p[1])), 9, COLOR_DIBUJO[n], 1 if recordado else 2)
-            cv2.putText(img, n + (" (memoria)" if recordado else ""), (int(p[0]) + 12, int(p[1]) - 8),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, COLOR_DIBUJO[n], 1)
-    p = [proc.pos.get(n) for n in CC.MARCADORES]
-    if all(x is not None for x in p):
-        pts = [(int(x), int(y)) for x, y in p]
-        cv2.polylines(img, [np.array(pts)], False, (0, 255, 255), 2)
-    vistos = "  ".join(f"{n}:{'si' if proc.pos.get(n) is not None else 'NO'}" for n in CC.MARCADORES)
-    lineas = [
-        f"crudo:  t1={_g(proc.theta_crudo, 0)}  t2={_g(proc.theta_crudo, 1)}   "
-        f"{'VISTO' if proc.visto else ('SOLO t1 (t2 predicho)' if proc.solo_theta1 else 'NO VISTO (Kalman predice)')}",
-        f"kalman: t1={_g(proc.theta_kf, 0)}  t2={_g(proc.theta_kf, 1)}   "
-        f"{proc.config['nombre']} (f_n={proc.config['f_n_hz']} Hz)",
-        f"robot <- {proc.fuente.upper()}   {'ENVIANDO' if estado['enviando'] else 'PAUSA (R)'}   "
-        f"{estado['fps']:.0f} fps   proceso {proc.t_proc_ms:.1f} ms   kalman {proc.t_calc_us:.0f} us",
-        f"R camara: sigma = {np.sqrt(proc.r_camara[0]):.2f}, {np.sqrt(proc.r_camara[1]):.2f} deg "
-        f"({proc.origen_r})",
-        f"{det.modo}: {vistos}",
-    ]
-    if estado["msg"]:
-        lineas.append(estado["msg"])
-    if estado["grabando"]:
-        lineas.append("REC  " + estado["grabando"])
-    for i, texto in enumerate(lineas):
-        _texto(img, texto, (8, 20 + 20 * i), 0.5)
-    teclas = "L colores" if det.modo == "color" else "D diagnostico"
-    _texto(img, f"{teclas}  C pose  N ruido  F fuente  1/2/3 Q  R robot  G grabar  Q salir",
-           (8, img.shape[0] - 10), 0.45)
+class Robot:
+    """El ESP32 (firmware/adquisicion): conexión, estado, órdenes y giroscopio."""
+
+    def __init__(self, puerto):
+        from conexion import ConexionESP32
+        self.puerto = puerto
+        self.conexion = ConexionESP32()
+        self.conexion.conectar(puerto, C.BAUDIOS_ADQUISICION)   # puede lanzar SerialException
+        self.cfg = ""                     # línea "# cfg ..." del firmware
+        self.imu_ok = None
+        self.version = ""
+        self.ultimo_cmd = None
+        self._t_ultimo_envio = 0.0
+        self._transmision_pedida = False
+        self._t_inicio_envio = None
+        self.muestras = 0
+        self.error = ""
+
+    def estado(self):
+        if self.error:
+            return f"ERROR: {self.error[:28]}", ROJO
+        if not self.conexion.listo:
+            return f"{self.puerto}: conectando...", AMARILLO
+        if self.imu_ok is False:
+            return f"{self.puerto}: revisa las IMU", ROJO
+        fw = f" fw {self.version}" if self.version else ""
+        return f"{self.puerto}{fw}  " + ("IMU ok" if self.imu_ok else "listo"), VERDE
+
+    def empezar_a_enviar(self):
+        self._t_inicio_envio = time.perf_counter()
+
+    def atender(self, sesion):
+        """Lee lo que mandó el ESP32: config, avisos y muestras del giroscopio."""
+        if not self.conexion.listo:
+            return
+        if not self._transmision_pedida:
+            self.conexion.enviar("s 1")       # que mande su giroscopio (100 Hz)
+            self._transmision_pedida = True
+        try:
+            lineas = self.conexion.leer_lineas()
+        except Exception as e:                  # cable desconectado, etc.
+            self.error = str(e)
+            return
+        t_rx = time.perf_counter()
+        for linea in lineas:
+            if linea.startswith("# cfg"):
+                self.cfg = linea
+                m = re.search(r"version=(\S+)", linea)
+                self.version = m.group(1).replace("adquisicion-", "") if m else ""
+                self.imu_ok = "imu1_ok=1" in linea and "imu2_ok=1" in linea
+                continue
+            v = parsear_linea_datos(linea)
+            if v is not None:
+                self.muestras += 1
+                if sesion is not None:
+                    sesion.agregar_robot(t_rx, v)
+
+    def enviar(self, cmd):
+        """Manda la orden si toca (regla de decidir_envio). Devuelve True si se envió."""
+        if cmd is None or not self.conexion.listo or self.error:
+            return False
+        ahora = time.perf_counter()
+        objetivo = cmd
+        if self._t_inicio_envio is not None and ahora - self._t_inicio_envio < ARRANQUE_SUAVE_S:
+            # Arranque suave: el robot venía de otra pose; se acerca a pasos cortos.
+            desde = self.ultimo_cmd or (90, 90)          # el firmware arranca en 90/90
+            objetivo = tuple(int(d + max(-PASO_ARRANQUE_GRADOS, min(PASO_ARRANQUE_GRADOS, c - d)))
+                             for d, c in zip(desde, cmd))
+        if not decidir_envio(objetivo, self.ultimo_cmd, ahora, self._t_ultimo_envio):
+            return False
+        try:
+            self.conexion.enviar_servos(*objetivo)
+        except Exception as e:
+            self.error = str(e)
+            return False
+        self.ultimo_cmd, self._t_ultimo_envio = objetivo, ahora
+        return True
+
+    def cerrar(self):
+        try:
+            self.conexion.enviar("s 0")
+        except Exception:
+            pass
+        self.conexion.desconectar()
 
 
-def _texto(img, texto, org, escala, color=(255, 255, 255)):
-    """Texto con un rectángulo oscuro detrás: se lee sobre cualquier fondo."""
-    (ancho, alto), base = cv2.getTextSize(texto, cv2.FONT_HERSHEY_SIMPLEX, escala, 1)
-    x, y = org
-    cv2.rectangle(img, (x - 3, y - alto - 3), (x + ancho + 3, y + base + 1), (0, 0, 0), -1)
-    cv2.putText(img, texto, org, cv2.FONT_HERSHEY_SIMPLEX, escala, color, 1)
+def normalizar_video(arg):
+    """'0' -> 0 (webcam);  '192.168.1.38' o '192.168.1.38:4747' -> URL de DroidCam."""
+    if arg.isdigit():
+        return int(arg)
+    if re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}(:\d+)?", arg):
+        return f"http://{arg if ':' in arg else arg + ':4747'}/video"
+    return arg
 
 
-def _g(v, i):
-    return "  --  " if v is None else f"{v[i]:6.1f}"
+def abrir_robot(puerto):
+    """Abre el ESP32 o explica qué pasa (sin errores largos de Python)."""
+    from serial import SerialException
+    from conexion import detectar_puerto, puertos_disponibles
+    if puerto.lower() == "auto":
+        puerto = detectar_puerto() or ""
+        if not puerto:
+            disp = ", ".join(f"{p} ({d})" for p, d in puertos_disponibles()) or "ninguno"
+            raise SystemExit(f"No encontré el ESP32. Puertos disponibles: {disp}\n"
+                             "Usa --puerto COMx con el de la placa.")
+    try:
+        robot = Robot(puerto)
+    except SerialException as e:
+        disp = ", ".join(p for p, _ in puertos_disponibles()) or "ninguno"
+        raise SystemExit(f"No se pudo abrir {puerto}: {e}\n"
+                         f"  - ¿El Monitor Serie de Arduino está CERRADO?\n"
+                         f"  - Puertos disponibles: {disp}")
+    print(f"Robot en {puerto}. Arranca en PAUSA: tecla R para que te copie.")
+    return robot
+
+
+def pista(proc, robot, enviando):
+    """El siguiente paso, en una línea (abajo del video, en amarillo)."""
+    if proc.midiendo_ruido:
+        return ""
+    if proc.theta_crudo is None:
+        return ("Muestra los 3 cuadros: 0 hombro, 1 codo, 2 muneca" if proc.detector.modo == "aruco"
+                else "Muestra los 3 marcadores de color")
+    if not proc.pose_calibrada:
+        return "Brazo estirado al frente y tecla C"
+    if not proc.origen_r.startswith("medido"):
+        return "Brazo quieto y tecla N (mide R, 10 s)"
+    if robot is not None and not enviando:
+        return "Tecla R: el robot empieza a copiarte"
+    return ""
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--video", default=str(CC.FUENTE_VIDEO),
-                    help="número de cámara (0, 1...) o URL de DroidCam (http://IP:4747/video)")
-    ap.add_argument("--puerto", default="", help="puerto del ESP32 (p. ej. COM3); vacío = sin robot")
+                    help="IP del teléfono, URL de DroidCam o número de cámara (0, 1...)")
+    ap.add_argument("--puerto", default="", help="COMx, 'auto', o vacío = sin robot")
     ap.add_argument("--modo", default=CC.MODO_DETECCION, choices=["aruco", "color"],
                     help="marcadores: cuadros ArUco impresos (por defecto) o papeles de color")
     args = ap.parse_args()
-    fuente = int(args.video) if args.video.isdigit() else args.video
+    fuente = normalizar_video(args.video)
     CC.FUENTE_VIDEO = fuente
 
+    print(f"Abriendo video: {fuente} ...")
     cam = LectorVideo(fuente)
     if not cam.abierto():
-        pista = ""
+        pista_url = ""
         if isinstance(fuente, str) and fuente.startswith("http") and fuente.count(":") < 2:
-            pista = ("\n  -> Falta el PUERTO. DroidCam usa el 4747: "
-                     f"{fuente.split('/video')[0]}:4747/video")
-        raise SystemExit(f"No se pudo abrir el video {fuente!r}. ¿DroidCam abierto en el teléfono, "
-                         f"los dos en la misma WiFi y el navegador CERRADO?{pista}")
-
-    conexion = None
-    if args.puerto:
-        from conexion import ConexionESP32
-        conexion = ConexionESP32()
-        conexion.conectar(args.puerto, C.BAUDIOS_ADQUISICION)
-        print(f"Conectado a {args.puerto}. El robot arranca en PAUSA: tecla R para enviar.")
-
+            pista_url = ("\n  -> Falta el PUERTO. DroidCam usa el 4747: "
+                         f"{fuente.split('/video')[0]}:4747/video")
+        raise SystemExit(f"No se pudo abrir el video {fuente!r}.\n"
+                         f"  - ¿DroidCam abierto en el teléfono y la IP es la que muestra la app?\n"
+                         f"  - ¿El PC y el teléfono en la misma red (o el PC en el hotspot del teléfono)?\n"
+                         f"  - ¿El navegador está CERRADO? (DroidCam atiende a un solo programa){pista_url}")
     print(f"Video abierto con: {cam.metodo}")
+    robot = abrir_robot(args.puerto) if args.puerto else None
+
     proc = ProcesadorCamara(args.modo)
-    estado = {"enviando": False, "fps": 0.0, "msg": "", "grabando": "", "diagnostico": False}
+    panel = Panel(CC.ALTO)
+    estado = {"enviando": False, "fps": 0.0, "diagnostico": False, "robot": robot,
+              "sesion": None, "pista": ""}
+    espejo = CC.ESPEJO
     sesion = None
     sesiones_grabadas = []
     subidas = []
-    transmision_pedida = False
-    ultimo_cmd, t_ultimo_envio = None, 0.0
     clics = {"pendientes": [] if proc.detector_listo() else list(CC.MARCADORES)}
     ultima_imagen = {"img": None}
+    if clics["pendientes"]:
+        panel.mensaje("Modo color: clic en HOMBRO, CODO y MUNECA", 8)
 
     def al_clic(evento, x, y, *_):
-        if evento == cv2.EVENT_LBUTTONDOWN and clics["pendientes"] and ultima_imagen["img"] is not None:
+        if (evento == cv2.EVENT_LBUTTONDOWN and clics["pendientes"] and x < CC.ANCHO
+                and ultima_imagen["img"] is not None):
             nombre = clics["pendientes"].pop(0)
             marcador = proc.detector.marcadores[nombre]
             marcador.aprender(ultima_imagen["img"], x, y)
-            print(f"Color de {nombre} aprendido: HSV = {marcador.hsv}")
+            siguiente = clics["pendientes"][0].upper() if clics["pendientes"] else ""
+            panel.mensaje(f"{nombre} aprendido" + (f": ahora clic en {siguiente}" if siguiente else ""), 6)
 
-    cv2.namedWindow("Teleoperacion")
-    cv2.setMouseCallback("Teleoperacion", al_clic)
-    t_fps = time.perf_counter()
-    n_fps = 0
+    cv2.namedWindow(VENTANA, cv2.WINDOW_AUTOSIZE)
+    cv2.setMouseCallback(VENTANA, al_clic)
+    t_fps, n_fps = time.perf_counter(), 0
+    ventana_mostrada = False
     while True:
         t_pedido = time.perf_counter()
         ok, img, t = cam.leer()
         t_espera_ms = (time.perf_counter() - t_pedido) * 1e3
+        if robot is not None:
+            robot.atender(sesion)
         if not ok:
             if cam.es_archivo:
                 print("Fin del video.")
                 break
-            # Aún no llega un cuadro nuevo: atender la ventana y el robot igual (no congelar).
-            if cam.segundos_sin_cuadro() > 2.0:
-                estado["msg"] = "Sin video hace >2 s: ¿DroidCam abierto? ¿navegador cerrado?"
-                if ultima_imagen["img"] is not None:
-                    img_aviso = ultima_imagen["img"].copy()
-                    dibujar(img_aviso, proc, estado)
-                    cv2.imshow("Teleoperacion", img_aviso)
-            if conexion is not None:
-                conexion.leer_lineas()
-            if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
-                break
-            continue
-        if estado["msg"].startswith("Sin video"):
-            estado["msg"] = ""                          # volvió el video
-        if img.shape[1] != CC.ANCHO or img.shape[0] != CC.ALTO:
-            img = cv2.resize(img, (CC.ANCHO, CC.ALTO))
-        if CC.ESPEJO:
-            img = cv2.flip(img, 1)
-        ultima_imagen["img"] = img.copy()
-        proc.procesar(img, t)
+            # Aún no llega un cuadro nuevo: atender la ventana igual (no congelar).
+            if cam.segundos_sin_cuadro() > 2.0 and ultima_imagen["img"] is not None:
+                panel.mensaje("Sin video: reconectando con DroidCam...", 1.0)
+                cv2.imshow(VENTANA, panel.dibujar(ultima_imagen["img"].copy(), proc, estado))
+            tecla = cv2.waitKey(1)
+        else:
+            if img.shape[1] != CC.ANCHO or img.shape[0] != CC.ALTO:
+                img = cv2.resize(img, (CC.ANCHO, CC.ALTO))
+            if espejo:
+                img = cv2.flip(img, 1)
+            ultima_imagen["img"] = img
+            proc.procesar(img, t)
+            panel.agregar(t, proc)
 
-        # FPS medidos (no supuestos)
-        n_fps += 1
-        if t - t_fps >= 1.0:
-            estado["fps"] = n_fps / (t - t_fps)
-            t_fps, n_fps = t, 0
+            n_fps += 1                            # FPS medidos (no supuestos)
+            if t - t_fps >= 1.0:
+                estado["fps"] = n_fps / (t - t_fps)
+                t_fps, n_fps = t, 0
 
-        if clics["pendientes"]:
-            estado["msg"] = f"Haz clic en el marcador del {clics['pendientes'][0].upper()}"
-        elif proc.midiendo_ruido:
-            estado["msg"] = "Midiendo ruido de la camara: brazo QUIETO..."
-        elif estado["msg"].startswith("Haz clic"):
-            estado["msg"] = "Colores listos. Brazo estirado al frente y tecla C."
-        elif proc.detector.modo == "aruco" and proc.theta_crudo is None:
-            estado["msg"] = "Muestra los 3 cuadros: 0 hombro, 1 codo, 2 muneca"
-        elif estado["msg"].startswith("Muestra"):
-            estado["msg"] = "Te veo. Brazo estirado al frente y tecla C."
+            # Enviar al robot
+            theta = proc.theta_para_robot()
+            cmd = modelo_a_servo(*theta) if theta is not None else None
+            enviado = robot.enviar(cmd) if (robot is not None and estado["enviando"]) else False
 
-        # Enviar al robot
-        cmd = None
-        enviado = False
-        theta = proc.theta_para_robot()
-        if theta is not None:
-            cmd = modelo_a_servo(*theta)
-        if conexion is not None and conexion.listo:
-            if not transmision_pedida:
-                conexion.enviar("s 1")       # que el ESP32 mande su giroscopio (100 Hz)
-                transmision_pedida = True
-            if estado["enviando"] and cmd is not None:
-                ahora = time.perf_counter()
-                if decidir_envio(cmd, ultimo_cmd, ahora, t_ultimo_envio):
-                    conexion.enviar_servos(*cmd)
-                    ultimo_cmd, t_ultimo_envio = cmd, ahora
-                    enviado = True
-        if conexion is not None:
-            t_rx = time.perf_counter()
-            for linea in conexion.leer_lineas():
-                v = parsear_linea_datos(linea)
-                if v is not None and sesion is not None:
-                    sesion.agregar_robot(t_rx, v)
+            if sesion is not None:
+                sesion.agregar(proc, t, estado["enviando"], cmd, enviado, t_espera_ms)
+                dur = sesion.duracion_s(t)
+                estado["sesion"] = (dur, guia_grabacion(dur), sesion.ruta.stem)
+            if clics["pendientes"]:
+                estado["pista"] = "Clic en " + clics["pendientes"][0].upper()
+            else:
+                estado["pista"] = "" if sesion is not None else pista(proc, robot, estado["enviando"])
 
-        if sesion is not None:
-            sesion.agregar(proc, t, estado["enviando"], cmd, enviado, t_espera_ms)
-            dur = sesion.duracion_s(t)
-            estado["grabando"] = f"{sesion.ruta.name}  {dur:4.1f} s   {guia_grabacion(dur)}"
+            cv2.imshow(VENTANA, panel.dibujar(img.copy(), proc, estado))
+            ventana_mostrada = True
+            tecla = cv2.waitKey(1)
 
-        dibujar(img, proc, estado)
-        cv2.imshow("Teleoperacion", img)
-        tecla = cv2.waitKey(1) & 0xFF
-        if tecla in (ord("q"), 27):
+        # ¿Cerraron la ventana con la X?
+        if ventana_mostrada and cv2.getWindowProperty(VENTANA, cv2.WND_PROP_VISIBLE) < 1:
             break
-        elif tecla == ord("l") and proc.detector.modo == "color":
+        if tecla < 0:
+            continue
+        tecla = chr(tecla & 0xFF).lower() if (tecla & 0xFF) < 128 else ""
+        if tecla in ("q", "\x1b"):
+            break
+        elif tecla == "l" and proc.detector.modo == "color":
             clics["pendientes"] = list(CC.MARCADORES)
-        elif tecla == ord("d"):
+        elif tecla == "d":
             estado["diagnostico"] = not estado["diagnostico"]
-        elif tecla == ord("c"):
-            estado["msg"] = ("Pose de referencia guardada: ahora vale (90, 0)" if proc.calibrar_pose()
-                             else "No veo los 3 marcadores")
-        elif tecla == ord("n"):
+            panel.mensaje("Diagnostico " + ("ON: rojo = cuadros que no se leen" if estado["diagnostico"]
+                                            else "OFF"))
+        elif tecla == "m":
+            espejo = not espejo
+            panel.mensaje(f"Espejo {'ON' if espejo else 'OFF'}: vuelve a pulsar C con el brazo al frente", 6)
+        elif tecla == "c":
+            panel.mensaje("Pose de referencia: ahora vale (90, 0)" if proc.calibrar_pose()
+                          else "No veo los 3 marcadores: no se pudo calibrar")
+        elif tecla == "n":
             proc.empezar_medir_ruido()
-        elif tecla == ord("f"):
+        elif tecla == "f":
             proc.fuente = "crudo" if proc.fuente == "kalman" else "kalman"
-        elif tecla in (ord("1"), ord("2"), ord("3")):
-            proc.elegir_q(tecla - ord("1"))
-        elif tecla == ord("r"):
-            estado["enviando"] = not estado["enviando"] and conexion is not None
-        elif tecla == ord("g"):
+            panel.mensaje(f"El robot ahora se mueve con: {proc.fuente.upper()}")
+        elif tecla in ("1", "2", "3"):
+            proc.elegir_q(int(tecla) - 1)
+            panel.mensaje(f"{proc.config['nombre']}: f_n = {proc.config['f_n_hz']:g} Hz "
+                          f"({proc.config['razon']})", 5)
+        elif tecla == "r":
+            if robot is None:
+                panel.mensaje("Sin robot: abre el programa con --puerto COMx (o auto)")
+            else:
+                estado["enviando"] = not estado["enviando"]
+                if estado["enviando"]:
+                    robot.empezar_a_enviar()
+                panel.mensaje("Robot: COPIANDOTE (arranque suave)" if estado["enviando"] else "Robot en PAUSA")
+        elif tecla == "g":
             if sesion is None:
-                sesion = Sesion(proc, t0=t)
+                sesion = Sesion(proc, t0=time.perf_counter())
+                panel.mensaje(f"Grabando {sesion.ruta.name}: sigue la guia de arriba", 3)
             else:
                 ruta = sesion.cerrar()
                 sesiones_grabadas.append(ruta)
-                sesion, estado["grabando"] = None, ""
-                estado["msg"] = f"Guardado {ruta.name}"
+                sesion, estado["sesion"] = None, None
+                panel.mensaje(f"Guardado {ruta.name} ({len(sesiones_grabadas)} sesiones). Subiendo...", 5)
                 import sincronizar
                 subidas.append(sincronizar.subir_en_segundo_plano(
                     f"Teleoperación: {ruta.stem}", lambda m: print("[git]", m),
@@ -482,15 +572,11 @@ def main():
     if sesion is not None:
         sesiones_grabadas.append(sesion.cerrar())
     print(f"Video: {cam.metodo}. Cuadros recibidos {cam.recibidos}, descartados por viejos "
-          f"{cam.descartados} (si son muchos, el PC no alcanza: es normal que bote algunos).")
+          f"{cam.descartados}, reconexiones {cam.reconexiones}.")
     cam.cerrar()
     cv2.destroyAllWindows()
-    if conexion is not None:
-        try:
-            conexion.enviar("s 0")
-        except Exception:
-            pass
-        conexion.desconectar()
+    if robot is not None:
+        robot.cerrar()
     if sesiones_grabadas:
         _analizar_y_subir(subidas)
 
@@ -503,7 +589,7 @@ def _analizar_y_subir(subidas):
     try:
         import analisis_teleop
         carpeta = analisis_teleop.analizar("reales")
-        print(f"Resultados en {carpeta.relative_to(Rp.RAIZ)}")
+        print(f"Resultados en {carpeta.relative_to(Rp.RAIZ)} (abre resumen_teleop.md)")
     except Exception as e:                      # el análisis nunca debe impedir subir los datos
         print(f"El análisis falló ({e}); los datos quedan guardados igual.")
     import sincronizar

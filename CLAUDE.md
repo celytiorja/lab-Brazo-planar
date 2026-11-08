@@ -1,6 +1,6 @@
 # Notas para Claude (leer SIEMPRE completo al iniciar)
 
-Última actualización: 2026-11-03 (ArUco, video sin retraso, análisis E8). Rama de trabajo: `claude/friendly-feynman-xfljpf`
+Última actualización: 2026-11-08 (revisión final E2: panel, q cámara corregida, guía). Rama de trabajo: `claude/friendly-feynman-xfljpf`
 (repo `celytiorja/lab-Brazo-planar`, es la única rama; el usuario también hace commits
 en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autoría.
 
@@ -129,8 +129,11 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   (DetectorAruco por defecto: cuadros impresos DICT_4X4_50, ID 0 hombro / 1 codo / 2 muñeca,
   esquinas sub-píxel; DetectorColor = respaldo HSV con clic), `generar_marcadores.py`
   (crea `docs/marcadores_aruco.pdf`, 6 cm + repuestos de 4 cm, regla de 10 cm; imprime el
-  patrón para dibujarlo a mano), `kalman_camara.py` (estado [θ1, ω1, θ2, ω2], H mide θ, q = r·(2π f_n)^4 con
-  f_n 1.5/3/6 Hz, predice si no ve; **medición parcial**: NaN en θ2 → H solo con la fila
+  patrón para dibujarlo a mano), `kalman_camara.py` (estado [θ1, ω1, θ2, ω2], H mide θ,
+  **q = r·Δt·(2π f_n)^4** (2026-11-08: antes faltaba Δt y el filtro quedaba ~2.3× más rápido
+  de lo nombrado, casi sin filtrar; `caracterizar_q` simula el filtro real) con
+  f_n 1.5/3/6 Hz (ruido ×0.53/0.70/0.86; temblor 8 Hz ×0.27/0.49/0.83; retraso a 2 Hz
+  58/16/2 ms), predice si no ve; **medición parcial**: NaN en θ2 → H solo con la fila
   de θ1; tras PREDICCION_LIBRE_S 0.2 s sin medir, la ω se frena con τ 0.15 s),
   `config_camara.py`, `video_rapido.py` (LectorVideo: hilo que guarda solo el cuadro más
   nuevo; para http lee el MJPEG directo con urllib buscando FFD8/FFD9 y decodifica solo el
@@ -141,10 +144,22 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   `prueba_latencia_video.py` (DroidCam falso: antes 75→2205 ms, ahora 15→17 ms).
   vision.DetectorAruco también **sigue por cercanía** candidatos rechazados (desenfoque) hasta
   8 cuadros (`ARUCO_SEGUIR_*`).
+- Pantalla de teleop (2026-11-08): `panel_teleop.py` (video 640×480 + panel 300 px: fps,
+  marcadores H/C/M, θ crudo/Kalman, 2 gráficas en vivo 6 s, robot `fw 1.2 IMU ok`, Q, R,
+  teclas; pista amarilla del siguiente paso; banda REC con guía). `teleop_camara.py`:
+  clase Robot (lee `# cfg`, arranque suave 1.5 s a 4°/orden desde 90/90, errores sin
+  traceback), `--video IP` se completa, `--puerto auto`, tecla M espejo, teclas sin
+  importar mayúsculas, cerrar con la X termina, mensajes temporales, Kalman se reinicia si
+  pasan > 0.7 s sin video. `video_rapido.py` se reconecta solo (MJPEG sin proxy).
+  `sincronizar.py`: GIT_TERMINAL_PROMPT=0 + timeout 120 s (no cuelga pidiendo contraseña).
+  `analisis_teleop.py`: omite sesiones < 1 s o dañadas; tabla `configuraciones_q_camara.md`.
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **30 pasan**.
-- Docs: `docs/00_git…`, `01_cinematica`, `02_conexiones`, `03_interfaz`,
+- Pruebas: `python -m pytest python/` → **34 pasan**. Pruebas de punta a punta (no en el
+  repo): DroidCam falso (MJPEG) + ESP32 falso en un pty, con teclas simuladas: OK.
+- Docs: **`docs/GUIA_ENTREGA2.md`** (cada criterio E2 con evidencia, guion de 8 min, qué
+  decir con números reales, preguntas difíciles, qué NO decir), `docs/PRUEBA_FINAL.md`,
+  `docs/00_git…`, `01_cinematica`, `02_conexiones`, `03_interfaz`,
   `04_captura_y_entregas`, `05_teleoperacion_camara`, `ENTREGAS`, `SUSTENTACION`;
   `datos/DICCIONARIO.md`; `datos/crudos/descartados/LEEME.md`.
 
@@ -171,8 +186,12 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   - Q elegida **Q_media** (f_c 5 Hz, q = 0.0097). Ruido ω reposo puro: directa 0.031,
     MM5 0.017, **Kalman 0.014**, MM21 0.009 °/s. Retraso ω (validación): MM5 19.7,
     **Kalman 17.3**, MM21 98 ms. Ruido α: directa 12.0 vs Kalman 3.3 °/s².
-  - NIS en reposo ≈ 2–4 (consistente); en movimiento ≫ 2 (vibración del servo, el servo
-    no alcanza la amplitud en los senos rápidos): limitación de R de reposo.
+  - NIS en reposo ≈ 3.7 SOLO en seno_rapido_01 (en escalones/seno_lento el "reposo" da
+    100–2000); en movimiento ~10⁵–10⁶ (modelo de velocidad no explica el servo): límite
+    declarado (Q elegida por frecuencia, no por consistencia).
+  - Retraso ω medido 17.6 ms (ajuste) vs 32 ms de diseño 1/(2πf_c): Kalman es IIR (retraso
+    depende del movimiento); la MM (fase lineal) sí coincide con su teoría. Retraso de θ del
+    Kalman 3.8 ms (corrige φ con la covarianza cruzada φ–ω) vs 19 ms MM5.
   - Aviso: el acelerómetro ay2 satura unas pocas muestras en los arranques de escalones.
 
 ## 7. Teleoperación (Entrega 2) — código listo, faltan las sesiones reales
@@ -202,10 +221,11 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
 - Sesiones: `datos/teleop/sesion_XX.csv` (t_s, visto, solo_theta1, hombro_memoria, θ crudo y
   kf, ω kf, fuente, enviando, cmd, enviado, t_calc_kf_us, t_proc_ms, t_espera_ms) +
   `sesion_XX_robot.csv` (giroscopio del robot a 100 Hz; teleop manda "s 1" al conectar).
-- Sintético (resultados/sinteticos/teleop): aspereza θ1 0.81→0.71, θ2 1.88→1.40 (mismos
-  cuadros); error θ1 en oclusión 19°→0.27° (medición parcial); Kalman ~0.2 ms, detección +
-  Kalman ~3.5 ms (10 % de 33 ms); retraso orden→robot ≈ 175 ms recuperado del giroscopio.
-  El retraso Kalman vs crudo sale ≈ 0 ms (modelo de velocidad: tipo 2, sigue rampas).
+- Sintético (resultados/sinteticos/teleop, con q corregida): aspereza θ1 0.81→0.50, θ2
+  1.88→0.93 (mismos cuadros); vs verdad en cuadros vistos Kalman NO es más exacto (0.38 vs
+  0.33°: suavizar ≠ precisión); error θ1 en oclusión 19°→0.24° (medición parcial); Kalman
+  ~0.25 ms, detección + Kalman ~3 ms (9 % de 33 ms); retraso orden→robot ≈ 175 ms
+  recuperado del giroscopio. La métrica de "vibración del robot" no es concluyente.
 - SIGUIENTE: que el usuario corra la prueba real y revisar `resultados/reales/teleop/`.
 
 ## 8. Pendientes (en orden)

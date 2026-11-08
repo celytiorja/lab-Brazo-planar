@@ -138,6 +138,10 @@ Lo que el código no arregla es la WiFi: usa el **hotspot del teléfono** (ping 
   - Si solo se tapa la muñeca, θ1 se sigue midiendo: H se queda con su fila (**medición
     parcial**) y solo θ2 se predice.
   - Si la oclusión es larga, la velocidad estimada se frena para que el robot no siga de largo.
+- **Q de la cámara:** q = r·Δt·(2π f_n)⁴ (r = varianza por cuadro medida con N; r·Δt la
+  convierte en densidad). Las 3 configuraciones (f_n = 1,5 / 3 / 6 Hz) están caracterizadas en
+  `resultados/<origen>/teleop/configuraciones_q_camara.md`. Q_media reduce el temblor de 8 Hz a
+  la mitad con menos de 16 ms de retraso hasta 2 Hz.
 - **No hay deriva**: la cámara mide el ángulo directamente. Es el complemento perfecto de las
   IMU, que no tiemblan pero derivan. **Fusionarlas** (cámara + giroscopios en tu brazo) es el
   paso siguiente; el código ya está preparado (`python/kalman_camara.py`).

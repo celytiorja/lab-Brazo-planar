@@ -39,7 +39,17 @@ def test_kalman_camara_sigue_rampa_y_predice_si_falta_medicion():
 
 
 def test_q_desde_f_n():
-    assert q_desde_f_n(1 / (2 * math.pi), 2.0) == pytest.approx(2.0)
+    # ω_n = 1 rad/s, r = 2 °², Δt = 0.5 s  ->  q = r·Δt·ω_n⁴ = 1
+    assert q_desde_f_n(1 / (2 * math.pi), 2.0, dt=0.5) == pytest.approx(1.0)
+
+
+def test_q_camara_da_la_f_n_pedida():
+    """Con la q corregida, f_n baja = más suave y más lento (compromiso real)."""
+    from kalman_camara import caracterizar_q
+    baja, media, alta = (caracterizar_q(f) for f in (1.5, 3.0, 6.0))
+    assert baja["factor_ruido"] < media["factor_ruido"] < alta["factor_ruido"] < 1
+    assert baja["ganancia_8Hz"] < 0.4 and media["ganancia_8Hz"] < 0.6   # atenúan el temblor
+    assert media["retraso_ms_2Hz"] < 20 and alta["retraso_ms_2Hz"] < 5
 
 
 # ---------------- ArUco ----------------
@@ -114,3 +124,58 @@ def test_kalman_camara_medicion_parcial_corrige_solo_theta1():
         th, _ = kf.paso(dt, (100.0, np.nan))
     assert th[0] == pytest.approx(100, abs=0.5)  # θ1 corregido por la cámara
     assert th[1] == pytest.approx(30, abs=1.0)   # θ2 se quedó donde estaba
+
+
+class _ConexionFalsa:
+    """Hace de ESP32: guarda lo que se le manda y entrega líneas preparadas."""
+    listo = True
+
+    def __init__(self, lineas=()):
+        self.enviado, self._lineas = [], list(lineas)
+
+    def enviar(self, texto):
+        self.enviado.append(texto)
+
+    def enviar_servos(self, h, c):
+        self.enviado.append((h, c))
+
+    def leer_lineas(self):
+        lineas, self._lineas = self._lineas, []
+        return lineas
+
+
+def _robot_falso(lineas=()):
+    from teleop_camara import Robot
+    robot = Robot.__new__(Robot)                 # sin abrir un puerto de verdad
+    robot.puerto, robot.conexion = "COMx", _ConexionFalsa(lineas)
+    robot.cfg, robot.imu_ok, robot.version, robot.error = "", None, "", ""
+    robot.ultimo_cmd, robot._t_ultimo_envio = None, 0.0
+    robot._transmision_pedida, robot._t_inicio_envio, robot.muestras = False, None, 0
+    return robot
+
+
+def test_robot_lee_la_configuracion_del_firmware_y_pide_el_giroscopio():
+    robot = _robot_falso(["# cfg version=adquisicion-1.2 fs_hz=100 imu1_ok=1 imu2_ok=1",
+                          "D," + ",".join(["0"] * 19)])
+    robot.atender(None)
+    assert robot.conexion.enviado[0] == "s 1"
+    assert robot.version == "1.2" and robot.imu_ok is True and robot.muestras == 1
+    assert "IMU ok" in robot.estado()[0]
+
+
+def test_robot_arranque_suave_no_salta_de_golpe():
+    robot = _robot_falso()
+    robot.empezar_a_enviar()
+    assert robot.enviar((150, 20))                       # pide ir lejos de (90, 90)...
+    assert robot.ultimo_cmd == (94, 86)                  # ...pero avanza solo 4° por orden
+    robot._t_inicio_envio -= 10                          # ya pasó el arranque suave
+    robot._t_ultimo_envio -= 1
+    assert robot.enviar((150, 20)) and robot.ultimo_cmd == (150, 20)
+
+
+def test_normalizar_video():
+    from teleop_camara import normalizar_video
+    assert normalizar_video("0") == 0
+    assert normalizar_video("192.168.1.38") == "http://192.168.1.38:4747/video"
+    assert normalizar_video("192.168.43.1:4747") == "http://192.168.43.1:4747/video"
+    assert normalizar_video("http://x:4747/video") == "http://x:4747/video"

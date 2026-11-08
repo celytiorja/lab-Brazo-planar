@@ -301,16 +301,47 @@ def analizar(origen="reales"):
     sint = origen == "sinteticos"
     filas = []
     for ruta in rutas:
-        res, extra = analizar_sesion(ruta)
-        filas.append(res)
-        graficar_sesion(res["sesion"], extra, salida, sint)
+        try:
+            if sum(1 for _ in open(ruta, encoding="utf-8")) < 31:
+                print(f"  {ruta.name}: menos de 1 s grabado, se omite.")
+                continue
+            res, extra = analizar_sesion(ruta)
+            filas.append(res)
+            graficar_sesion(res["sesion"], extra, salida, sint)
+        except Exception as e:                   # una sesión dañada no tumba las demás
+            print(f"  {ruta.name}: no se pudo analizar ({type(e).__name__}: {e})")
+    if not filas:
+        raise SystemExit("Ninguna sesión se pudo analizar.")
     tabla = pd.DataFrame(filas)
+    _guardar_caracterizacion_q(salida)
     nota_sint = ("\n\n> ⚠️ DATOS SINTÉTICOS: video generado por código para probar el análisis. "
                  "No son mediciones." if sint else "")
     Rp.guardar_tabla(tabla, salida, "metricas_teleop_completas", "Teleoperación: todas las métricas",
                      nota_sint)
     _guardar_resumen(tabla, salida, nota_sint)
     return salida
+
+
+def _guardar_caracterizacion_q(salida):
+    """Las 3 Q de la cámara, caracterizadas simulando el filtro real (no depende de R)."""
+    from kalman_camara import caracterizar_q
+    filas = []
+    for cfg in CC.CONFIGS_Q_CAMARA:
+        c = caracterizar_q(cfg["f_n_hz"])
+        filas.append({"Q": cfg["nombre"], "f_n [Hz]": cfg["f_n_hz"],
+                      "factor de ruido": round(c["factor_ruido"], 2),
+                      "ganancia 1 Hz": round(c["ganancia_1Hz"], 2),
+                      "retraso 1 Hz [ms]": round(c["retraso_ms_1Hz"], 1),
+                      "ganancia 2 Hz": round(c["ganancia_2Hz"], 2),
+                      "retraso 2 Hz [ms]": round(c["retraso_ms_2Hz"], 1),
+                      "ganancia 8 Hz (temblor)": round(c["ganancia_8Hz"], 2),
+                      "razon": cfg["razon"]})
+    Rp.guardar_tabla(pd.DataFrame(filas), salida, "configuraciones_q_camara",
+                     "Kalman de la cámara: las 3 configuraciones de Q",
+                     "Simulación del filtro real a 30 cuadros/s (kalman_camara.caracterizar_q). "
+                     "q = r·Δt·(2π f_n)⁴: como q es proporcional a r, este comportamiento NO "
+                     "depende de la R medida. Factor de ruido = desviación de la salida / de la "
+                     "entrada. Movimiento voluntario < 2 Hz; temblor fisiológico ~8–12 Hz.")
 
 
 def _fmt(v, d=1):
@@ -369,12 +400,18 @@ def _guardar_resumen(tabla, salida, nota_sint):
         for fuente, v in g.iterrows():
             L.append(f"| {fuente} | {v.iloc[0]:.2f} | {v.iloc[1]:.2f} |")
         L.append("")
-    L += ["## Cómo leerlo", "",
+    L += ["## Las 3 configuraciones de Q", "",
+          "Ver `configuraciones_q_camara.md`: menor f_n = más suave (menos ruido y temblor) "
+          "pero más retraso. Q_media (f_n = 3 Hz) deja pasar el movimiento voluntario (< 2 Hz) "
+          "con < 16 ms de retraso y reduce el temblor de 8 Hz a la mitad.", "",
+          "## Cómo leerlo", "",
           "- **Aspereza**: si el ángulo cambiara a velocidad constante daría 0. El temblor de la "
           "detección la sube. Menor = más suave.",
           "- **Cambios de dirección/s**: cada uno es el servo yendo y viniendo: eso es el temblor que "
           "se ve y se oye en el robot.",
-          "- **Retraso**: el precio de suavizar (Q más baja = más suave y más tarde).",
+          "- **Retraso**: el precio de suavizar (Q más baja = más suave y más tarde). Es pequeño "
+          "porque el modelo de velocidad casi constante sigue las rampas sin retraso: solo se "
+          "atrasa cuando la velocidad cambia.",
           "- **Oclusión**: la cámara cruda se queda congelada; Kalman sigue con su modelo de velocidad "
           "casi constante (sirve para huecos cortos; en huecos largos la predicción se aleja).",
           "- **Límite**: la latencia teléfono → PC (WiFi) no se puede medir con estos datos; el retraso "
