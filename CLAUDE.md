@@ -49,7 +49,9 @@ en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autor
 - Git: `user.name "Cely"`, `user.email "juanchometroio@gmail.com"` (el de sus commits; NO
   usar el correo de la cuenta de Claude). 2026-11-08: **cambió de computador** (sin código):
   se le dio la guía de instalación (Git, Python 3.12 con PATH, VS Code, clone, venv, pip,
-  pytest, COM en el Administrador de dispositivos: puede no ser COM3).
+  pytest, COM en el Administrador de dispositivos: puede no ser COM3). Nuevo PC: usuario
+  Windows `anama`; repo en `C:\Users\anama\Desktop\Juan\lab señales\lab-Brazo-planar`
+  (ruta con ESPACIO: usar comillas en la terminal).
 - Repo en `C:\Users\juanp\Documents\lab-Brazo-planar` (NO la carpeta "Documentos" de
   OneDrive; para abrirla: `explorer .` desde la terminal).
 - Entorno virtual `.venv` (activar: `.venv\Scripts\activate`; la línea debe empezar con
