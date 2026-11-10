@@ -101,6 +101,22 @@ def main():
               f"inicio {e[:10].mean():5.0f} ms, final {e[-10:].mean():5.0f} ms")
     print(f"El lector nuevo botó {lector.descartados} de {lector.recibidos} cuadros por viejos "
           f"(el programa tarda 45 ms y llegan cada {1000 / FPS:.0f} ms).")
+    # Se guarda para el informe (generar_informe.py lo lee).
+    import json
+    from datetime import datetime
+
+    import reporte as Rp
+    ruta = Rp.RAIZ / "resultados" / "latencia_video.json"
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    ruta.write_text(json.dumps({
+        "fecha": datetime.now().isoformat(timespec="seconds"),
+        "trabajo_por_cuadro_ms": 45, "fps_camara": FPS, "duracion_s": 8,
+        "opencv_edad_inicio_ms": float(e1[:10].mean()), "opencv_edad_final_ms": float(e1[-10:].mean()),
+        "lector_edad_inicio_ms": float(e2[:10].mean()), "lector_edad_final_ms": float(e2[-10:].mean()),
+        "lector_descartados": lector.descartados, "lector_recibidos": lector.recibidos,
+        "nota": "DroidCam falso local (sin WiFi): mide solo el retraso que agrega el programa."},
+        indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"Guardado en {ruta.relative_to(Rp.RAIZ)}")
 
 
 if __name__ == "__main__":

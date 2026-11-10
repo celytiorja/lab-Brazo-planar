@@ -1,0 +1,13 @@
+{
+  "fecha": "2026-11-10T16:12:05",
+  "trabajo_por_cuadro_ms": 45,
+  "fps_camara": 30,
+  "duracion_s": 8,
+  "opencv_edad_inicio_ms": 833.2008314000062,
+  "opencv_edad_final_ms": 2969.121947699995,
+  "lector_edad_inicio_ms": 17.461305399996263,
+  "lector_edad_final_ms": 17.13754259999405,
+  "lector_descartados": 68,
+  "lector_recibidos": 243,
+  "nota": "DroidCam falso local (sin WiFi): mide solo el retraso que agrega el programa."
+}
