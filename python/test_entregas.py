@@ -155,3 +155,14 @@ def test_coherencia_detecta_servo_que_no_obedece(tmp_path):
     d["gz2"] = d["gz2"].iloc[:50].mean().round().astype(int)
     d.to_csv(ruta, index=False)
     assert not captura_valida(ruta, "perfil")
+
+
+def test_generar_informe_crea_el_docx(tmp_path):
+    """El informe de la Entrega 2 se genera leyendo los resultados (sin copiar números a mano)."""
+    pytest.importorskip("docx")
+    import generar_informe as GI
+    if GI.leer_json(GI.E2 / "seleccion_Q.json") is None:
+        pytest.skip("faltan los resultados reales de la Entrega 2")
+    ruta, n_fig, n_tab, _ = GI.generar(tmp_path / "informe.docx")
+    assert ruta.exists() and ruta.stat().st_size > 10_000
+    assert n_tab >= 5 and n_fig >= 5

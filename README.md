@@ -40,6 +40,7 @@ python/
   analisis_teleop.py             ← E8: crudo vs Kalman, oclusiones, tiempos, retraso del robot
   simular_teleop.py              ← prueba completa con video sintético (verdad conocida)
   prueba_latencia_video.py       ← mide por qué "se trababa" (antes 2 s, ahora ~17 ms)
+  generar_informe.py             ← informe de la Entrega 2 (docs/informe/Informe_Entrega2.docx/.pdf)
   analisis_e1.py / analisis_e2.py← resultados de la Entrega 1 y 2 (Kalman)
   analisis_e1_extra.py           ← sensibilidad, sesgo, Δt, estructura de R, repetibilidad...
   verificacion_cinematica.py     ← punto 1: error del brazo real medido en papel
