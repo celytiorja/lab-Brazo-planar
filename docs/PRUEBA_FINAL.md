@@ -58,7 +58,7 @@ Se abre la ventana **Teleoperacion**:
   - los marcadores H, C y M (verde = visto, amarillo = recordado o seguido, rojo = no visto);
   - θ1 y θ2, crudo (naranja) y Kalman (azul);
   - **dos gráficas en vivo** de los últimos 6 s;
-  - el estado del robot (`fw 1.2 IMU ok`) y Kalman (Q, f_n, R).
+  - el estado del robot (`fw 1.3 IMU ok`) y Kalman (Q, f_n, R).
 
 ### 3. Calibrar (1 min)
 

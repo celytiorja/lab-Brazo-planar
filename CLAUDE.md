@@ -70,7 +70,11 @@ en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autor
 - ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521), fuente 5 V (cargador USB 68 W;
   sin confirmar la corriente real a 5 V; no ha habido reinicios).
 - Pines (docs/02_conexiones.md): servo hombro GPIO25, codo GPIO26; I2C SDA GPIO21,
-  SCL GPIO22 (las dos IMU en el mismo bus). IMU1 = 0x68 (AD0 a GND/sin conectar) en el
+  SCL GPIO22 (las dos IMU en el mismo bus). **2026-11-10: el ESP32 NUEVO es un ESP32-S3** (no tiene
+  GPIO 22 ni 25) → firmware v1.3 elige pines solo (`#if CONFIG_IDF_TARGET_ESP32S3`):
+  S3 = servos GPIO4/5, I2C SDA 8 / SCL 9; la línea `# cfg` dice placa y pines. Placa en
+  el IDE: "ESP32S3 Dev Module". Chip USB "USB to UART" = CP210x (driver Silicon Labs; le
+  costó descargar el zip). Subida falló con "Wrong boot mode (0x13)" → BOOT + RST. IMU1 = 0x68 (AD0 a GND/sin conectar) en el
   eslabón 1; IMU2 = 0x69 (**AD0 a 3V3**) en el eslabón 2. GND de la fuente unido al ESP32.
   (Problema resuelto: con los dos AD0 sin conectar ambas eran 0x68 → NACK.)
 - L1 = 105 mm, L2 = 85 mm (de eje a eje). Calibración en `python/parametros.py`:

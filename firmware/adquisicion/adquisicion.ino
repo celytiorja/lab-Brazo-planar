@@ -23,6 +23,10 @@
   nadie atendía al I2C. Ahora el I2C se inicia DENTRO de la tarea de muestreo
   (núcleo 0): toda la cadena de medición vive en su propio núcleo.
 
+  v1.3: funciona también en el ESP32-S3 (que NO tiene los GPIO 22 ni 25): los
+  pines se eligen solos según la placa elegida en el IDE, y la línea "# cfg" dice
+  la placa y los pines. La medición es idéntica a la v1.2.
+
   Monitor Serie / Python: 460800 baudios, fin de línea "Nueva línea".
   ¿Por qué 460800 y no 115200? Cada línea tiene ~115 caracteres y se envían 100
   por segundo = 11 500 caracteres/s. A 115200 baudios caben como máximo ~11 520/s:
@@ -46,13 +50,26 @@
 #include <Wire.h>
 #include <ESP32Servo.h>
 
-const char *VERSION = "adquisicion-1.2";
+const char *VERSION = "adquisicion-1.3";
 
 // ---------- Pines (ver docs/02_conexiones.md) ----------
+// Se eligen SOLOS según la placa que se compila (Herramientas → Placa):
+//   ESP32 clásico ("ESP32 Dev Module"):  servos 25 / 26,  I2C SDA 21 / SCL 22.
+//   ESP32-S3      ("ESP32S3 Dev Module"): los GPIO 22 y 25 NO EXISTEN en el S3
+//                                          -> servos 4 / 5,  I2C SDA 8 / SCL 9.
+#if CONFIG_IDF_TARGET_ESP32S3
+const char *PLACA = "ESP32-S3";
+const int PIN_SERVO_HOMBRO = 4;
+const int PIN_SERVO_CODO   = 5;
+const int PIN_SDA = 8;
+const int PIN_SCL = 9;
+#else
+const char *PLACA = "ESP32";
 const int PIN_SERVO_HOMBRO = 25;
 const int PIN_SERVO_CODO   = 26;
 const int PIN_SDA = 21;
 const int PIN_SCL = 22;
+#endif
 
 // ---------- Muestreo ----------
 const uint32_t BAUDIOS    = 460800;
@@ -197,9 +214,10 @@ bool consignaPerfil(int p, float t, int &h, int &c, int &f) {
 void imprimirConfiguracion() {
   Serial.printf("# cfg version=%s fs_hz=100 periodo_us=%lu baudios=%lu gyro_lsb_dps=65.5 "
                 "acc_lsb_g=16384 dlpf_hz=44 imu1=0x68 imu2=0x69 imu1_ok=%d imu2_ok=%d "
-                "pulso_us=%d-%d\n",
+                "pulso_us=%d-%d placa=%s servo_pines=%d/%d i2c_sda_scl=%d/%d\n",
                 VERSION, (unsigned long)PERIODO_US, (unsigned long)BAUDIOS,
-                imu1Ok, imu2Ok, PULSO_MIN_US, PULSO_MAX_US);
+                imu1Ok, imu2Ok, PULSO_MIN_US, PULSO_MAX_US,
+                PLACA, PIN_SERVO_HOMBRO, PIN_SERVO_CODO, PIN_SDA, PIN_SCL);
 }
 
 // Solo ANOTA el pedido; actualizarServos() lo aplica sin escribir más de una vez

@@ -6,7 +6,7 @@ con qué escalas, montaje y calibración se grabó cada archivo).
 """
 
 # ---------- Firmware firmware/adquisicion ----------
-VERSION_FIRMWARE = "adquisicion-1.2"
+VERSION_FIRMWARE = "adquisicion-1.3"   # 1.3 = 1.2 + pines automáticos para ESP32-S3
 BAUDIOS_ADQUISICION = 460800
 FS_HZ = 100.0                 # frecuencia de muestreo nominal
 DLPF_HZ = 44                  # filtro paso bajo interno de la MPU-6050 (antialias)

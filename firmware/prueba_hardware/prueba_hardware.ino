@@ -20,10 +20,23 @@
 #include <ESP32Servo.h>
 
 // ---------- Pines (ver docs/02_conexiones.md) ----------
+// Se eligen SOLOS según la placa que se compila (Herramientas → Placa):
+//   ESP32 clásico ("ESP32 Dev Module"):  servos 25 / 26,  I2C SDA 21 / SCL 22.
+//   ESP32-S3      ("ESP32S3 Dev Module"): los GPIO 22 y 25 NO EXISTEN en el S3
+//                                          -> servos 4 / 5,  I2C SDA 8 / SCL 9.
+#if CONFIG_IDF_TARGET_ESP32S3
+const char *PLACA = "ESP32-S3";
+const int PIN_SERVO_HOMBRO = 4;
+const int PIN_SERVO_CODO   = 5;
+const int PIN_SDA = 8;
+const int PIN_SCL = 9;
+#else
+const char *PLACA = "ESP32";
 const int PIN_SERVO_HOMBRO = 25;
 const int PIN_SERVO_CODO   = 26;
 const int PIN_SDA = 21;
 const int PIN_SCL = 22;
+#endif
 
 // ---------- Direcciones I2C ----------
 const uint8_t IMU1 = 0x68;  // eslabón 1 (hombro), AD0 a GND o sin conectar
@@ -120,6 +133,8 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== Prueba de hardware ===");
+  Serial.printf("Placa %s: servos en GPIO %d / %d, I2C SDA %d / SCL %d\n",
+                PLACA, PIN_SERVO_HOMBRO, PIN_SERVO_CODO, PIN_SDA, PIN_SCL);
 
   Wire.begin(PIN_SDA, PIN_SCL);
   Wire.setClock(400000);   // I2C rápido: 400 kHz

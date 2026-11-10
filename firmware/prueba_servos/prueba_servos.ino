@@ -21,8 +21,14 @@
 #include <ESP32Servo.h>
 
 // ---------- Pines (ver docs/02_conexiones.md) ----------
+// ESP32 clásico: 25 / 26.  ESP32-S3 (no tiene GPIO 25): 4 / 5. Se elige solo.
+#if CONFIG_IDF_TARGET_ESP32S3
+const int PIN_SERVO_HOMBRO = 4;
+const int PIN_SERVO_CODO   = 5;
+#else
 const int PIN_SERVO_HOMBRO = 25;
 const int PIN_SERVO_CODO   = 26;
+#endif
 
 // Ancho de pulso [µs] para 0° y 180°. Si en los extremos el servo zumba o
 // choca, acerca estos valores al centro (p. ej. 600 y 2400).

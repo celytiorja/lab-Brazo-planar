@@ -9,6 +9,27 @@
 | I2C SDA (ambas IMU) | **GPIO21** (D21) | Es el SDA por defecto de la librería `Wire`. |
 | I2C SCL (ambas IMU) | **GPIO22** (D22) | Es el SCL por defecto de `Wire`. |
 
+### ⚠️ Si tu placa es un **ESP32-S3** (otros pines)
+
+El ESP32-S3 **no tiene** los GPIO 22 ni 25. El firmware elige los pines solo según la placa
+que eliges en Arduino IDE (**Herramientas → Placa → esp32 → ESP32S3 Dev Module**):
+
+| Señal | ESP32 clásico | **ESP32-S3** |
+|---|---|---|
+| Servo hombro (señal) | GPIO25 | **GPIO4** |
+| Servo codo (señal) | GPIO26 | **GPIO5** |
+| I2C SDA (ambas IMU) | GPIO21 | **GPIO8** |
+| I2C SCL (ambas IMU) | GPIO22 | **GPIO9** |
+| VCC de las IMU / AD0 de la IMU2 | 3V3 | **3V3** |
+| GND (IMU, servos, fuente) | GND | **GND** |
+
+- La placa ESP32-S3 suele tener **dos conectores USB**. Usa el que dice **UART** (o COM):
+  ese es el que Windows ve como "USB to UART" con el driver CP210x.
+- Para subir el programa, si sale *"Wrong boot mode"*, mantén pulsado **BOOT**, pulsa y
+  suelta **RST** (o EN), suelta BOOT y vuelve a pulsar *Subir*.
+- Al arrancar, la línea `# cfg` del Monitor Serie dice la placa y los pines:
+  `placa=ESP32-S3 servo_pines=4/5 i2c_sda_scl=8/9`.
+
 Pines **a evitar** en el ESP32: 0, 2, 5, 12 y 15 (definen cómo arranca la placa),
 6–11 (memoria flash interna) y 34–39 (solo entrada).
 
