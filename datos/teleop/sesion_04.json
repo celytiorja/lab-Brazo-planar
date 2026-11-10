@@ -1,0 +1,36 @@
+{
+  "fecha": "2026-11-10T11:24:33",
+  "r_camara": [
+    0.5327136365997326,
+    0.4141428765662044
+  ],
+  "origen_r": "medido 2026-11-10T11:23:08",
+  "configs_q": [
+    {
+      "nombre": "Q_baja",
+      "f_n_hz": 1.5,
+      "razon": "muy suave: ruido x0.53, temblor 8 Hz x0.27; retraso ~40-60 ms a 1-2 Hz"
+    },
+    {
+      "nombre": "Q_media",
+      "f_n_hz": 3.0,
+      "razon": "equilibrio: ruido x0.70, temblor 8 Hz x0.49; retraso < 16 ms hasta 2 Hz"
+    },
+    {
+      "nombre": "Q_alta",
+      "f_n_hz": 6.0,
+      "razon": "casi sin retraso (< 3 ms a 2 Hz); filtra poco: ruido x0.86"
+    }
+  ],
+  "offset": [
+    -71.55433637680181,
+    -19.259691902189275
+  ],
+  "fuente_video": "http://172.20.10.2:4747/video",
+  "modo_deteccion": "aruco",
+  "periodo_ordenes_s": 0.04,
+  "cambio_min_grados": 1,
+  "commit": "4978fd3+cambios_sin_commit",
+  "cuadros": 523,
+  "muestras_robot": 3853
+}
