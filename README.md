@@ -20,6 +20,7 @@ docs/
   ENTREGAS.md                    ← localizadores E1–E9 y respuestas de comprobación individual
   PRUEBA_FINAL.md                ← ⭐ los 10 minutos antes de entregar la E2 (teleoperación)
   GUIA_ENTREGA2.md               ← ⭐ cada criterio de la E2: evidencia, qué decir, preguntas
+  LOCALIZADORES_E2.md            ← ⭐ texto para el instrumento E2: archivo de cada evidencia y nivel
 firmware/
   prueba_servos/                 ← sketch para probar solo los dos servos
   prueba_hardware/               ← sketch para probar servos + IMU juntos
