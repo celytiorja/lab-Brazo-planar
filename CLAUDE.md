@@ -75,7 +75,12 @@ en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autor
   S3 = servos GPIO4/5, I2C SDA 8 / SCL 9; la línea `# cfg` dice placa y pines. Placa en
   el IDE: "ESP32S3 Dev Module". Chip USB "USB to UART" = CP210x (driver Silicon Labs; le
   costó descargar el zip). Subida falló con "Wrong boot mode (0x13)" → BOOT + RST. Con BOOT+RST
-  subió v1.3 y respondió `imu1_ok=1 imu2_ok=1` (cableado S3 correcto, COM3). IMU1 = 0x68 (AD0 a GND/sin conectar) en el
+  subió v1.3 y respondió `imu1_ok=1 imu2_ok=1` (cableado S3 correcto, COM3).
+  En interfaz_imu salieron `error_i2c` sueltos (sobre todo imu1) y "perdidas 12" al mover
+  servos → **firmware v1.4**: I2C 100 kHz, timeout 5 ms (antes 50 por defecto), 3
+  reintentos, reinicio del bus + IMU tras 5 fallos seguidos (`# i2c_reiniciado`); la
+  línea `# cfg` informa i2c_hz, reintentos_i2c y reinicios_i2c. También se vio θ1 estimado
+  más corto que la consigna en un escalón (45° de 63°): pendiente comprobar físicamente. IMU1 = 0x68 (AD0 a GND/sin conectar) en el
   eslabón 1; IMU2 = 0x69 (**AD0 a 3V3**) en el eslabón 2. GND de la fuente unido al ESP32.
   (Problema resuelto: con los dos AD0 sin conectar ambas eran 0x68 → NACK.)
 - L1 = 105 mm, L2 = 85 mm (de eje a eje). Calibración en `python/parametros.py`:

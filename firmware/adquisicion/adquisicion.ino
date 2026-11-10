@@ -27,6 +27,12 @@
   pines se eligen solos según la placa elegida en el IDE, y la línea "# cfg" dice
   la placa y los pines. La medición es idéntica a la v1.2.
 
+  v1.4: lectura I2C ROBUSTA. Con el ESP32-S3 aparecieron "error_i2c" sueltos cuando
+  se movían los servos (ruido eléctrico + cables). Antes, un fallo botaba la muestra
+  y podía bloquear 50 ms. Ahora: I2C a 100 kHz (más tolerante al ruido), espera
+  máxima de 5 ms por lectura, hasta 3 reintentos, y si una IMU falla 5 veces
+  seguidas se reinicia el bus y se reconfiguran las IMU ("# i2c_reiniciado").
+
   Monitor Serie / Python: 460800 baudios, fin de línea "Nueva línea".
   ¿Por qué 460800 y no 115200? Cada línea tiene ~115 caracteres y se envían 100
   por segundo = 11 500 caracteres/s. A 115200 baudios caben como máximo ~11 520/s:
@@ -50,7 +56,7 @@
 #include <Wire.h>
 #include <ESP32Servo.h>
 
-const char *VERSION = "adquisicion-1.3";
+const char *VERSION = "adquisicion-1.4";
 
 // ---------- Pines (ver docs/02_conexiones.md) ----------
 // Se eligen SOLOS según la placa que se compila (Herramientas → Placa):
@@ -110,6 +116,13 @@ int pedidoH = 90, pedidoC = 90;
 uint32_t ultimaEscrituraH = 0, ultimaEscrituraC = 0;
 bool finPerfilPendiente = false;
 
+// ---------- I2C robusto (v1.4) ----------
+const uint32_t I2C_HZ = 100000;      // 100 kHz: 2 IMU ≈ 3.5 ms de los 10 ms del periodo
+const uint16_t I2C_TIMEOUT_MS = 5;   // una lectura fallida no bloquea más de esto
+const int I2C_REINTENTOS = 3;
+const int FALLOS_PARA_REINICIAR = 5;
+volatile uint32_t reintentosI2C = 0, reiniciosI2C = 0;
+
 // Una muestra viaja del núcleo 0 al núcleo 1 dentro de esta estructura.
 struct Muestra {
   uint32_t seq, t1, t2;
@@ -167,6 +180,22 @@ bool leerIMU(uint8_t dir, int16_t acc[3], int16_t gyro[3]) {
   return true;
 }
 
+// Igual que leerIMU, pero reintenta; t = instante (µs) del intento que funcionó.
+bool leerIMUConReintentos(uint8_t dir, int16_t acc[3], int16_t gyro[3], uint32_t &t) {
+  for (int i = 0; i < I2C_REINTENTOS; i++) {
+    t = micros();
+    if (leerIMU(dir, acc, gyro)) return true;
+    reintentosI2C++;
+  }
+  return false;
+}
+
+void iniciarBusI2C() {
+  Wire.begin(PIN_SDA, PIN_SCL);
+  Wire.setClock(I2C_HZ);
+  Wire.setTimeOut(I2C_TIMEOUT_MS);
+}
+
 // =====================================================================
 // Perfiles repetibles: la consigna depende SOLO del tiempo, así cada
 // repetición es idéntica (es lo que permite separar ajuste y validación).
@@ -214,10 +243,12 @@ bool consignaPerfil(int p, float t, int &h, int &c, int &f) {
 void imprimirConfiguracion() {
   Serial.printf("# cfg version=%s fs_hz=100 periodo_us=%lu baudios=%lu gyro_lsb_dps=65.5 "
                 "acc_lsb_g=16384 dlpf_hz=44 imu1=0x68 imu2=0x69 imu1_ok=%d imu2_ok=%d "
-                "pulso_us=%d-%d placa=%s servo_pines=%d/%d i2c_sda_scl=%d/%d\n",
+                "pulso_us=%d-%d placa=%s servo_pines=%d/%d i2c_sda_scl=%d/%d i2c_hz=%lu "
+                "reintentos_i2c=%lu reinicios_i2c=%lu\n",
                 VERSION, (unsigned long)PERIODO_US, (unsigned long)BAUDIOS,
                 imu1Ok, imu2Ok, PULSO_MIN_US, PULSO_MAX_US,
-                PLACA, PIN_SERVO_HOMBRO, PIN_SERVO_CODO, PIN_SDA, PIN_SCL);
+                PLACA, PIN_SERVO_HOMBRO, PIN_SERVO_CODO, PIN_SDA, PIN_SCL,
+                (unsigned long)I2C_HZ, (unsigned long)reintentosI2C, (unsigned long)reiniciosI2C);
 }
 
 // Solo ANOTA el pedido; actualizarServos() lo aplica sin escribir más de una vez
@@ -301,13 +332,13 @@ void leerOrdenes() {
 // =====================================================================
 void tareaMuestreo(void *) {
   // El I2C se inicia AQUÍ (núcleo 0) para que su interrupción quede en este núcleo.
-  Wire.begin(PIN_SDA, PIN_SCL);
-  Wire.setClock(400000);
+  iniciarBusI2C();
   imu1Ok = iniciarIMU(IMU1);
   imu2Ok = iniciarIMU(IMU2);
   imusListas = true;
 
   uint32_t seq = 0;
+  int fallosSeguidos = 0;
   TickType_t ultimo = xTaskGetTickCount();
   for (;;) {
     // Espera HASTA el próximo múltiplo de 10 ms (no "10 ms desde ahora"):
@@ -316,10 +347,19 @@ void tareaMuestreo(void *) {
     if (!transmitiendo) continue;
 
     Muestra m;
-    m.t1 = micros();
-    m.ok1 = leerIMU(IMU1, m.a1, m.g1);
-    m.t2 = micros();
-    m.ok2 = leerIMU(IMU2, m.a2, m.g2);
+    m.ok1 = leerIMUConReintentos(IMU1, m.a1, m.g1, m.t1);
+    m.ok2 = leerIMUConReintentos(IMU2, m.a2, m.g2, m.t2);
+    if (m.ok1 && m.ok2) {
+      fallosSeguidos = 0;
+    } else if (++fallosSeguidos >= FALLOS_PARA_REINICIAR) {
+      // El bus quedó "pegado" o una IMU se reinició (pico de corriente): empezar de nuevo.
+      Wire.end();
+      iniciarBusI2C();
+      iniciarIMU(IMU1);
+      iniciarIMU(IMU2);
+      reiniciosI2C++;
+      fallosSeguidos = 0;
+    }
     m.seq = seq++;
     m.perfil = perfil;
     m.fase = fase;
@@ -348,6 +388,11 @@ void actualizarPerfil() {
 }
 
 void enviarMuestras() {
+  static uint32_t reiniciosAvisados = 0;
+  if (reiniciosI2C != reiniciosAvisados) {
+    reiniciosAvisados = reiniciosI2C;
+    Serial.printf("# i2c_reiniciado veces=%lu\n", (unsigned long)reiniciosAvisados);
+  }
   Muestra m;
   while (xQueueReceive(cola, &m, 0) == pdTRUE) {
     if (!m.ok1 || !m.ok2) {
