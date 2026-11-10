@@ -70,17 +70,16 @@ en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autor
 - ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521), fuente 5 V (cargador USB 68 W;
   sin confirmar la corriente real a 5 V; no ha habido reinicios).
 - Pines (docs/02_conexiones.md): servo hombro GPIO25, codo GPIO26; I2C SDA GPIO21,
-  SCL GPIO22 (las dos IMU en el mismo bus). **2026-11-10: el ESP32 NUEVO es un ESP32-S3** (no tiene
-  GPIO 22 ni 25) → firmware v1.3 elige pines solo (`#if CONFIG_IDF_TARGET_ESP32S3`):
-  S3 = servos GPIO4/5, I2C SDA 8 / SCL 9; la línea `# cfg` dice placa y pines. Placa en
-  el IDE: "ESP32S3 Dev Module". Chip USB "USB to UART" = CP210x (driver Silicon Labs; le
-  costó descargar el zip). Subida falló con "Wrong boot mode (0x13)" → BOOT + RST. Con BOOT+RST
-  subió v1.3 y respondió `imu1_ok=1 imu2_ok=1` (cableado S3 correcto, COM3).
-  En interfaz_imu salieron `error_i2c` sueltos (sobre todo imu1) y "perdidas 12" al mover
-  servos → **firmware v1.4**: I2C 100 kHz, timeout 5 ms (antes 50 por defecto), 3
-  reintentos, reinicio del bus + IMU tras 5 fallos seguidos (`# i2c_reiniciado`); la
-  línea `# cfg` informa i2c_hz, reintentos_i2c y reinicios_i2c. También se vio θ1 estimado
-  más corto que la consigna en un escalón (45° de 63°): pendiente comprobar físicamente. IMU1 = 0x68 (AD0 a GND/sin conectar) en el
+  SCL GPIO22 (las dos IMU en el mismo bus). 2026-11-10: ESP32 nuevo. Un error de subida decía "ESP32-S3" (tenía
+  elegida la placa S3 en el IDE) y se asumió S3 → firmware v1.3 elige pines solo
+  (`#if CONFIG_IDF_TARGET_ESP32S3`: S3 = servos 4/5, I2C 8/9). PERO la línea `# cfg` de
+  la v1.4 confirmó **placa=ESP32 clásico, pines 25/26 y 21/22** (los de siempre), COM3,
+  chip USB CP210x. Subir: BOOT presionado hasta "Writing", luego EN; Upload Speed 115200.
+  En interfaz_imu (con v1.3) salieron `error_i2c` sueltos (imu1) y "perdidas 12" al mover
+  servos → **firmware v1.4**: I2C 100 kHz, timeout 5 ms, 3 reintentos, reinicio del bus
+  + IMU tras 5 fallos (`# i2c_reiniciado`); `# cfg` informa i2c_hz, reintentos y
+  reinicios. v1.4 cargada: imu1_ok=1 imu2_ok=1. Pendiente: θ1 estimado más corto que la
+  consigna en un escalón (45° de 63°): comprobar físicamente el hombro. IMU1 = 0x68 (AD0 a GND/sin conectar) en el
   eslabón 1; IMU2 = 0x69 (**AD0 a 3V3**) en el eslabón 2. GND de la fuente unido al ESP32.
   (Problema resuelto: con los dos AD0 sin conectar ambas eran 0x68 → NACK.)
 - L1 = 105 mm, L2 = 85 mm (de eje a eje). Calibración en `python/parametros.py`:
@@ -165,7 +164,7 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   `analisis_teleop.py`: omite sesiones < 1 s o dañadas; tabla `configuraciones_q_camara.md`.
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **34 pasan**. Pruebas de punta a punta (no en el
+- Pruebas: `python -m pytest python/` → **35 pasan**. Pruebas de punta a punta (no en el
   repo): DroidCam falso (MJPEG) + ESP32 falso en un pty, con teclas simuladas: OK.
 - Docs: **`docs/GUIA_ENTREGA2.md`** (cada criterio E2 con evidencia, guion de 8 min, qué
   decir con números reales, preguntas difíciles, qué NO decir), `docs/PRUEBA_FINAL.md`,
@@ -237,6 +236,14 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   ~0.25 ms, detección + Kalman ~3 ms (9 % de 33 ms); retraso orden→robot ≈ 175 ms
   recuperado del giroscopio. La métrica de "vibración del robot" no es concluyente.
 - SIGUIENTE: que el usuario corra la prueba real y revisar `resultados/reales/teleop/`.
+- 2026-11-10: teleop REAL funciona (el robot copia). Ya grabó sesion_01 (Kalman, 65 s, a
+  ~4.8 fps por WiFi de casa); σ θ1 de R = 2.42° (repetir N quieto). Va a grabar crudo +
+  Kalman de 30 s. Carpeta local "entrega2.2.0" (video + foto) aún NO subida.
+- Informe: `python/generar_informe.py` → `docs/informe/Informe_Entrega2.docx/.pdf`
+  (teleop marcada SINTÉTICA hasta que haya sesiones reales; `--foto RUTA`). El instrumento
+  v2.0 dice que el informe NO se califica (0 %). Guía para el profesor: `docs/LOCALIZADORES_E2.md`.
+- El usuario subió `Rubricas_Lab_3.pdf` (minisumo, EKF/UKF, informe IEEE): confirmó que
+  NO aplica, ignorarla.
 
 ## 8. Pendientes (en orden)
 
