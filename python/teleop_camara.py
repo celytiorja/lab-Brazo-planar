@@ -324,6 +324,7 @@ class Robot:
         if not self.conexion.listo:
             return
         if not self._transmision_pedida:
+            self.conexion.enviar("?")         # que repita su "# cfg" (versión, IMU ok)
             self.conexion.enviar("s 1")       # que mande su giroscopio (100 Hz)
             self._transmision_pedida = True
         try:

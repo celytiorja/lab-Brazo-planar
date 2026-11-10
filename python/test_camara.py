@@ -158,7 +158,7 @@ def test_robot_lee_la_configuracion_del_firmware_y_pide_el_giroscopio():
     robot = _robot_falso(["# cfg version=adquisicion-1.2 fs_hz=100 imu1_ok=1 imu2_ok=1",
                           "D," + ",".join(["0"] * 19)])
     robot.atender(None)
-    assert robot.conexion.enviado[0] == "s 1"
+    assert robot.conexion.enviado[:2] == ["?", "s 1"]
     assert robot.version == "1.2" and robot.imu_ok is True and robot.muestras == 1
     assert "IMU ok" in robot.estado()[0]
 
