@@ -164,7 +164,7 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   `analisis_teleop.py`: omite sesiones < 1 s o dañadas; tabla `configuraciones_q_camara.md`.
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **34 pasan**. Pruebas de punta a punta (no en el
+- Pruebas: `python -m pytest python/` → **35 pasan**. Pruebas de punta a punta (no en el
   repo): DroidCam falso (MJPEG) + ESP32 falso en un pty, con teclas simuladas: OK.
 - Docs: **`docs/GUIA_ENTREGA2.md`** (cada criterio E2 con evidencia, guion de 8 min, qué
   decir con números reales, preguntas difíciles, qué NO decir), `docs/PRUEBA_FINAL.md`,
@@ -236,6 +236,14 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   ~0.25 ms, detección + Kalman ~3 ms (9 % de 33 ms); retraso orden→robot ≈ 175 ms
   recuperado del giroscopio. La métrica de "vibración del robot" no es concluyente.
 - SIGUIENTE: que el usuario corra la prueba real y revisar `resultados/reales/teleop/`.
+- 2026-11-10: teleop REAL funciona (el robot copia). Ya grabó sesion_01 (Kalman, 65 s, a
+  ~4.8 fps por WiFi de casa); σ θ1 de R = 2.42° (repetir N quieto). Va a grabar crudo +
+  Kalman de 30 s. Carpeta local "entrega2.2.0" (video + foto) aún NO subida.
+- Informe: `python/generar_informe.py` → `docs/informe/Informe_Entrega2.docx/.pdf`
+  (teleop marcada SINTÉTICA hasta que haya sesiones reales; `--foto RUTA`). El instrumento
+  v2.0 dice que el informe NO se califica (0 %). Guía para el profesor: `docs/LOCALIZADORES_E2.md`.
+- El usuario subió `Rubricas_Lab_3.pdf` (minisumo, EKF/UKF, informe IEEE): confirmó que
+  NO aplica, ignorarla.
 
 ## 8. Pendientes (en orden)
 
