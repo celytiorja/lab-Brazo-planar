@@ -179,3 +179,16 @@ def test_normalizar_video():
     assert normalizar_video("192.168.1.38") == "http://192.168.1.38:4747/video"
     assert normalizar_video("192.168.43.1:4747") == "http://192.168.43.1:4747/video"
     assert normalizar_video("http://x:4747/video") == "http://x:4747/video"
+
+
+def test_analisis_detecta_imu_del_robot_sin_senal():
+    """Un giroscopio real siempre tiene ruido: 0.000 exacto muchas veces seguidas = IMU caída."""
+    import pandas as pd
+    from analisis_teleop import primera_falla_imu
+    rng = np.random.default_rng(0)
+    w = rng.normal(0, 0.03, 500)
+    sana = pd.DataFrame({"w1_dps": w, "w2_dps": w})
+    assert primera_falla_imu(sana) == 500
+    w1 = w.copy()
+    w1[300:] = 0.0                       # la IMU del hombro deja de responder en la muestra 300
+    assert primera_falla_imu(pd.DataFrame({"w1_dps": w1, "w2_dps": w})) == 300

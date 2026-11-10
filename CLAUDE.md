@@ -164,7 +164,7 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   `analisis_teleop.py`: omite sesiones < 1 s o dañadas; tabla `configuraciones_q_camara.md`.
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **35 pasan**. Pruebas de punta a punta (no en el
+- Pruebas: `python -m pytest python/` → **36 pasan**. Pruebas de punta a punta (no en el
   repo): DroidCam falso (MJPEG) + ESP32 falso en un pty, con teclas simuladas: OK.
 - Docs: **`docs/GUIA_ENTREGA2.md`** (cada criterio E2 con evidencia, guion de 8 min, qué
   decir con números reales, preguntas difíciles, qué NO decir), `docs/PRUEBA_FINAL.md`,
@@ -239,6 +239,14 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
 - 2026-11-10: teleop REAL funciona (el robot copia). Ya grabó sesion_01 (Kalman, 65 s, a
   ~4.8 fps por WiFi de casa); σ θ1 de R = 2.42° (repetir N quieto). Va a grabar crudo +
   Kalman de 30 s. Carpeta local "entrega2.2.0" (video + foto) aún NO subida.
+- 2026-11-10 tarde: sesiones REALES subidas (hotspot iPhone 172.20.10.2, 11–15 fps; R cámara
+  σ 0.73/0.64°). sesion_01 kalman 74 s, sesion_02 7 s sin robot (prueba), **sesion_03 CRUDO**
+  y **sesion_04 KALMAN** (las buenas, según el usuario). Aspereza crudo→Kalman: s03 θ1
+  0.86→0.67, θ2 2.20→1.65; s04 0.99→0.72, 2.82→2.09 (−22 a −27 %), retraso 5–10 ms; Kalman
+  ~265 µs, detección+Kalman 6.5 ms. Robot: orden→robot 185–200 ms (hombro), 170–175 (codo).
+  ⚠️ **IMU1 (hombro) del robot dejó de responder** a los 37.8 s de s03 y toda s04 (w1 = 0.000
+  exacto) → `primera_falla_imu` en analisis_teleop las descarta; s04 sin métricas de robot.
+  Pedir al usuario revisar el cable/soldadura de la IMU1 (0x68) antes de la demo.
 - Informe: `python/generar_informe.py` → `docs/informe/Informe_Entrega2.docx/.pdf`
   (teleop marcada SINTÉTICA hasta que haya sesiones reales; `--foto RUTA`). El instrumento
   v2.0 dice que el informe NO se califica (0 %). Guía para el profesor: `docs/LOCALIZADORES_E2.md`.

@@ -493,24 +493,92 @@ def resultados(inf, d):
                    "Aspereza θ₁ crudo / Kalman [°]", "Aspereza θ₂ crudo / Kalman [°]",
                    "Kalman [µs/cuadro]", "Detección + Kalman [ms]"], filas,
                   f"Teleoperación: crudo vs Kalman en los mismos cuadros{marca}.")
-        r0 = tp.iloc[0]
-        if "rmse_oclusion_theta1_kf" in tp and pd.notna(r0.get("rmse_oclusion_theta1_kf")):
-            inf.p(f"Durante las oclusiones de la muñeca, el error de θ₁ de la medición cruda (congelada) fue "
-                  f"{f(r0['rmse_oclusion_theta1_crudo'], 2)}° y el de Kalman {f(r0['rmse_oclusion_theta1_kf'], 2)}° "
-                  f"(medición parcial){marca}. Cuando la cámara ve bien, el error vs la verdad fue "
-                  f"{f(r0['rmse_theta1_crudo'], 2)}° (crudo) y {f(r0['rmse_theta1_kf'], 2)}° (Kalman): Kalman "
-                  "suaviza pero no es más exacto.")
-        if pd.notna(r0.get("retraso_orden_robot_hombro_ms")):
-            inf.p(f"Con los giroscopios del robot se midió el retraso orden → robot: "
-                  f"{f(r0['retraso_orden_robot_hombro_ms'], 0)} ms (hombro) y "
-                  f"{f(r0['retraso_orden_robot_codo_ms'], 0)} ms (codo); y cámara → robot "
-                  f"{f(r0['retraso_camara_robot_hombro_ms'], 0)} ms{marca}.")
-        for img in sorted(d["teleop_dir"].glob("20_teleop_*.png"))[:2]:
-            inf.figura(img, f"Ángulos crudos vs Kalman y órdenes al servo ({img.stem.replace('20_teleop_', '')})"
-                       + (f". {AVISO_SINT}." if d["teleop_sint"] else "."))
-        for img in sorted(d["teleop_dir"].glob("21_robot_*.png"))[:1]:
-            inf.figura(img, "Orden enviada vs movimiento del robot medido con sus IMU"
-                       + (f". {AVISO_SINT}." if d["teleop_sint"] else "."))
+        if d["teleop_sint"]:
+            _teleop_sintetico(inf, d, tp, marca)
+        else:
+            _teleop_real(inf, d, tp)
+
+
+def _ultima(tp, fuente):
+    filas = tp[tp["robot_movido_con"] == fuente]
+    return None if filas.empty else filas.iloc[-1]
+
+
+def _teleop_real(inf, d, tp):
+    """Sesiones reales: se destacan la última sesión con el robot movido por la cámara CRUDA y la
+    última movida por KALMAN (mismo protocolo de 30 s: lento, rápido, tapar la muñeca)."""
+    cr, kf = _ultima(tp, "crudo"), _ultima(tp, "kalman")
+    meta = {}
+    ruido = Rp.RAIZ / "datos" / "teleop" / "ruido_camara.json"
+    if ruido.exists():
+        meta = json.loads(ruido.read_text(encoding="utf-8"))
+    if meta:
+        inf.p(f"R de la cámara se midió con el brazo quieto ({meta['cuadros']} cuadros): "
+              f"σ = {f(meta['sigma_deg'][0], 2)}° en θ₁ y {f(meta['sigma_deg'][1], 2)}° en θ₂. "
+              f"Las sesiones se grabaron a {f(tp['fps'].min(), 1)}–{f(tp['fps'].max(), 1)} cuadros/s "
+              "por la red del teléfono (por debajo de los 30 nominales: el filtro usa el Δt real de "
+              "cada cuadro y se reinicia si pasan más de 0.7 s sin video).")
+    for r in (cr, kf):
+        if r is None:
+            continue
+        b1 = 100 * (1 - r["aspereza_theta1_kf"] / r["aspereza_theta1_crudo"])
+        b2 = 100 * (1 - r["aspereza_theta2_kf"] / r["aspereza_theta2_crudo"])
+        inf.p(f"{r['sesion']} (robot movido con {r['robot_movido_con'].upper()}, {f(r['duracion_s'], 0)} s): "
+              f"la cámara vio los tres marcadores en el {f(r['visto_pct'], 1)} % de los cuadros "
+              f"({int(r['oclusiones'])} oclusiones, la más larga de {f(r['oclusion_max_ms'], 0)} ms; en el "
+              f"{f(r['solo_theta1_pct'], 1)} % solo se midió θ₁ y Kalman predijo θ₂). En los mismos cuadros, "
+              f"Kalman redujo la aspereza de θ₁ un {f(b1, 0)} % y la de θ₂ un {f(b2, 0)} %, con un retraso "
+              f"de {f(r['retraso_kf_theta1_ms'], 0)} ms respecto a la medición cruda. Cómputo: Kalman "
+              f"{f(r['t_kalman_us_medio'], 0)} µs por cuadro; detección + Kalman {f(r['t_proc_ms_medio'], 1)} ms "
+              f"({f(r['carga_pct'], 0)} % del tiempo entre cuadros).")
+    con_robot = tp[tp["retraso_orden_robot_hombro_ms"].notna()] if "retraso_orden_robot_hombro_ms" in tp else tp.iloc[0:0]
+    if len(con_robot):
+        txt = "; ".join(f"{r['sesion']}: {f(r['retraso_orden_robot_hombro_ms'], 0)} ms (hombro) y "
+                        f"{f(r['retraso_orden_robot_codo_ms'], 0)} ms (codo), cámara → robot "
+                        f"{f(r['retraso_camara_robot_hombro_ms'], 0)} / {f(r['retraso_camara_robot_codo_ms'], 0)} ms"
+                        for _, r in con_robot.iterrows())
+        inf.p("Con los giroscopios del robot (las IMU de la Entrega 1) se midió el retraso orden → robot: "
+              + txt + ". Coincide con los ≈ 190 ms de respuesta del servo medidos en la Entrega 1: la "
+              "latencia dominante es el servo, no el filtro.")
+    if "imu_robot_falla_t_s" in tp and tp["imu_robot_falla_t_s"].notna().any():
+        caidas = tp[tp["imu_robot_falla_t_s"].notna()]
+        txt = ", ".join(f"{r['sesion']} desde {f(r['imu_robot_falla_t_s'], 1)} s" for _, r in caidas.iterrows())
+        inf.nota("FALLA DE SENSOR DECLARADA. La IMU del hombro del robot dejó de responder (giro = 0.000 "
+                 f"exacto, sin ruido) en: {txt}. El análisis descarta esas muestras de forma automática "
+                 "(python/analisis_teleop.py, primera_falla_imu); por eso la sesión movida con Kalman no tiene "
+                 "métricas del robot y el contraste de vibración del robot crudo vs Kalman compara sesiones "
+                 "distintas y no es concluyente. Las métricas de la cámara (aspereza, oclusión, tiempos) no "
+                 "dependen de esa IMU y son válidas.")
+    for r in (cr, kf):
+        if r is not None:
+            img = d["teleop_dir"] / f"20_teleop_{r['sesion']}.png"
+            if img.exists():
+                inf.figura(img, f"{r['sesion']} (robot movido con {r['robot_movido_con']}): ángulos crudos vs "
+                                "Kalman y órdenes al servo; en gris, los cuadros sin los tres marcadores.")
+    for _, r in con_robot.iterrows():
+        img = d["teleop_dir"] / f"21_robot_{r['sesion']}.png"
+        if img.exists():
+            inf.figura(img, f"{r['sesion']}: orden enviada vs movimiento del robot medido con sus IMU.")
+
+
+def _teleop_sintetico(inf, d, tp, marca):
+    r0 = tp.iloc[0]
+    if "rmse_oclusion_theta1_kf" in tp and pd.notna(r0.get("rmse_oclusion_theta1_kf")):
+        inf.p(f"Durante las oclusiones de la muñeca, el error de θ₁ de la medición cruda (congelada) fue "
+              f"{f(r0['rmse_oclusion_theta1_crudo'], 2)}° y el de Kalman {f(r0['rmse_oclusion_theta1_kf'], 2)}° "
+              f"(medición parcial){marca}. Cuando la cámara ve bien, el error vs la verdad fue "
+              f"{f(r0['rmse_theta1_crudo'], 2)}° (crudo) y {f(r0['rmse_theta1_kf'], 2)}° (Kalman): Kalman "
+              "suaviza pero no es más exacto.")
+    if pd.notna(r0.get("retraso_orden_robot_hombro_ms")):
+        inf.p(f"Con los giroscopios del robot se midió el retraso orden → robot: "
+              f"{f(r0['retraso_orden_robot_hombro_ms'], 0)} ms (hombro) y "
+              f"{f(r0['retraso_orden_robot_codo_ms'], 0)} ms (codo); y cámara → robot "
+              f"{f(r0['retraso_camara_robot_hombro_ms'], 0)} ms{marca}.")
+    for img in sorted(d["teleop_dir"].glob("20_teleop_*.png"))[:2]:
+        inf.figura(img, f"Ángulos crudos vs Kalman y órdenes al servo ({img.stem.replace('20_teleop_', '')})"
+                   f". {AVISO_SINT}.")
+    for img in sorted(d["teleop_dir"].glob("21_robot_*.png"))[:1]:
+        inf.figura(img, f"Orden enviada vs movimiento del robot medido con sus IMU. {AVISO_SINT}.")
 
 
 def discusion(inf, d):
@@ -615,7 +683,17 @@ def anexo(inf):
 
 
 # ======================================================================= principal
+def foto_por_defecto():
+    """docs/informe/foto_montaje.jpg (o .jpeg/.png) si existe: así no hay que pasar --foto."""
+    for ext in (".jpg", ".jpeg", ".png", ".JPG", ".PNG"):
+        p = SALIDA.parent / f"foto_montaje{ext}"
+        if p.exists():
+            return p
+    return None
+
+
 def generar(salida=SALIDA, foto=None):
+    foto = foto or foto_por_defecto()
     d = cargar_datos()
     inf = Informe()
     portada(inf, d)

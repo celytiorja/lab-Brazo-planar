@@ -212,8 +212,41 @@ def analizar_sesion(ruta):
     return res, extra
 
 
+MUESTRAS_CERO_IMU_MUERTA = 20   # 0.2 s seguidos con giro EXACTAMENTE 0.000: la IMU no responde
+
+
+def primera_falla_imu(robot):
+    """Índice de la primera muestra desde la que una IMU del robot dejó de responder.
+
+    Un giroscopio real nunca da 0.000 exacto 20 veces seguidas (siempre hay ruido de
+    ~0.03 °/s). Si eso pasa, la IMU se desconectó o falló el I2C y el firmware manda ceros.
+    Devuelve len(robot) si no hubo falla."""
+    n = len(robot)
+    primera = n
+    for col in ("w1_dps", "w2_dps"):
+        cero = (robot[col].to_numpy() == 0.0)
+        for a, b in tramos(cero):
+            if b - a >= MUESTRAS_CERO_IMU_MUERTA:
+                primera = min(primera, a)
+                break
+    return primera
+
+
 def analizar_robot(df, robot, t, crudo, visto, res):
     """Retrasos y vibración del robot a partir de su giroscopio."""
+    # Solo el tramo en que las DOS IMU respondían (ω_codo necesita las dos).
+    corte = primera_falla_imu(robot)
+    res["imu_robot_valida_pct"] = 100 * corte / len(robot)
+    if corte < len(robot):
+        res["imu_robot_falla_t_s"] = float(robot["t_s"].iloc[corte])
+    if corte < 200:                                          # menos de 2 s útiles: no se mide
+        for n in ("hombro", "codo"):
+            res[f"retraso_orden_robot_{n}_ms"] = np.nan
+            res[f"error_seguimiento_{n}_deg"] = np.nan
+            res[f"retraso_camara_robot_{n}_ms"] = np.nan
+            res[f"vibracion_robot_{n}_dps"] = np.nan
+        return None
+    robot = robot.iloc[:corte]
     tr = robot["t_s"].to_numpy()
     w1 = robot["w1_dps"].to_numpy()
     w_codo = robot["w2_dps"].to_numpy() - w1                # θ2 = φ2 − φ1 -> ω_codo = ω2 − ω1
@@ -384,6 +417,12 @@ def _guardar_resumen(tabla, salida, nota_sint):
               f"(p95 {r['t_kalman_us_p95']:.0f} µs)"
               + (f"; detección + Kalman **{r['t_proc_ms_medio']:.1f} ms** (p95 {r['t_proc_ms_p95']:.1f} ms) "
                  f"= {r['carga_pct']:.0f} % del tiempo entre cuadros." if "t_proc_ms_medio" in r else ".")]
+        if np.isfinite(r.get("imu_robot_falla_t_s", np.nan)):
+            L.append(f"- ⚠️ **Una IMU del robot dejó de responder** a los {r['imu_robot_falla_t_s']:.1f} s "
+                     f"(giro = 0.000 exacto, sin ruido): las métricas del robot usan solo el "
+                     f"{r['imu_robot_valida_pct']:.0f} % inicial"
+                     + (" → **no hay datos válidos del robot en esta sesión**."
+                        if not np.isfinite(r.get("retraso_orden_robot_hombro_ms", np.nan)) else "."))
         if np.isfinite(r.get("retraso_orden_robot_hombro_ms", np.nan)):
             L += [f"- Robot (giroscopios de la E1): retraso orden → robot "
                   f"**{r['retraso_orden_robot_hombro_ms']:.0f} ms** (hombro) / "
@@ -394,7 +433,8 @@ def _guardar_resumen(tabla, salida, nota_sint):
         L.append("")
     con_robot = tabla[tabla["robot_movido_con"] != "sin robot"]
     if {"crudo", "kalman"} <= set(con_robot["robot_movido_con"]) and "vibracion_robot_hombro_dps" in con_robot:
-        g = con_robot.groupby("robot_movido_con")[["vibracion_robot_hombro_dps", "vibracion_robot_codo_dps"]].mean()
+        g = (con_robot.dropna(subset=["vibracion_robot_hombro_dps"])
+             .groupby("robot_movido_con")[["vibracion_robot_hombro_dps", "vibracion_robot_codo_dps"]].mean())
         L += ["## Contraste en el robot: teleoperar con crudo vs con Kalman", "",
               "| Robot movido con | Vibración hombro [°/s] | Vibración codo [°/s] |", "|---|---|---|"]
         for fuente, v in g.iterrows():

@@ -50,7 +50,8 @@ Se generó con `python python/analisis_teleop.py`. Las dos columnas salen de los
 | Retraso respecto a crudo θ1 / θ2 [ms] | 0 | 5 / 5 |
 
 - Cómputo por cuadro: Kalman **269 µs** (p95 433 µs); detección + Kalman **6.6 ms** (p95 11.9 ms) = 7 % del tiempo entre cuadros.
-- Robot (giroscopios de la E1): retraso orden → robot **335 ms** (hombro) / 180 ms (codo); cámara → robot **430 ms** / 235 ms. Vibración del robot: 1.88 / 6.46 °/s.
+- ⚠️ **Una IMU del robot dejó de responder** a los 37.8 s (giro = 0.000 exacto, sin ruido): las métricas del robot usan solo el 86 % inicial.
+- Robot (giroscopios de la E1): retraso orden → robot **185 ms** (hombro) / 175 ms (codo); cámara → robot **220 ms** / 200 ms. Vibración del robot: 1.86 / 6.46 °/s.
 
 ## sesion_04 (robot movido con: kalman)
 
@@ -67,14 +68,14 @@ Se generó con `python python/analisis_teleop.py`. Las dos columnas salen de los
 | Retraso respecto a crudo θ1 / θ2 [ms] | 0 | 10 / 10 |
 
 - Cómputo por cuadro: Kalman **262 µs** (p95 420 µs); detección + Kalman **6.4 ms** (p95 11.3 ms) = 9 % del tiempo entre cuadros.
-- Robot (giroscopios de la E1): retraso orden → robot **0 ms** (hombro) / 165 ms (codo); cámara → robot **0 ms** / 200 ms. Vibración del robot: 0.00 / 7.77 °/s.
+- ⚠️ **Una IMU del robot dejó de responder** a los 0.2 s (giro = 0.000 exacto, sin ruido): las métricas del robot usan solo el 0 % inicial → **no hay datos válidos del robot en esta sesión**.
 
 ## Contraste en el robot: teleoperar con crudo vs con Kalman
 
 | Robot movido con | Vibración hombro [°/s] | Vibración codo [°/s] |
 |---|---|---|
-| crudo | 1.88 | 6.46 |
-| kalman | 1.63 | 8.30 |
+| crudo | 1.86 | 6.46 |
+| kalman | 3.26 | 8.83 |
 
 ## Las 3 configuraciones de Q
 
