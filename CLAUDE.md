@@ -70,17 +70,16 @@ en ella con el autor "Cely"). Commits: mensaje en español + líneas de co-autor
 - ESP32 DevKit, 2× servo MG996R, 2× MPU-6050 (GY-521), fuente 5 V (cargador USB 68 W;
   sin confirmar la corriente real a 5 V; no ha habido reinicios).
 - Pines (docs/02_conexiones.md): servo hombro GPIO25, codo GPIO26; I2C SDA GPIO21,
-  SCL GPIO22 (las dos IMU en el mismo bus). **2026-11-10: el ESP32 NUEVO es un ESP32-S3** (no tiene
-  GPIO 22 ni 25) → firmware v1.3 elige pines solo (`#if CONFIG_IDF_TARGET_ESP32S3`):
-  S3 = servos GPIO4/5, I2C SDA 8 / SCL 9; la línea `# cfg` dice placa y pines. Placa en
-  el IDE: "ESP32S3 Dev Module". Chip USB "USB to UART" = CP210x (driver Silicon Labs; le
-  costó descargar el zip). Subida falló con "Wrong boot mode (0x13)" → BOOT + RST. Con BOOT+RST
-  subió v1.3 y respondió `imu1_ok=1 imu2_ok=1` (cableado S3 correcto, COM3).
-  En interfaz_imu salieron `error_i2c` sueltos (sobre todo imu1) y "perdidas 12" al mover
-  servos → **firmware v1.4**: I2C 100 kHz, timeout 5 ms (antes 50 por defecto), 3
-  reintentos, reinicio del bus + IMU tras 5 fallos seguidos (`# i2c_reiniciado`); la
-  línea `# cfg` informa i2c_hz, reintentos_i2c y reinicios_i2c. También se vio θ1 estimado
-  más corto que la consigna en un escalón (45° de 63°): pendiente comprobar físicamente. IMU1 = 0x68 (AD0 a GND/sin conectar) en el
+  SCL GPIO22 (las dos IMU en el mismo bus). 2026-11-10: ESP32 nuevo. Un error de subida decía "ESP32-S3" (tenía
+  elegida la placa S3 en el IDE) y se asumió S3 → firmware v1.3 elige pines solo
+  (`#if CONFIG_IDF_TARGET_ESP32S3`: S3 = servos 4/5, I2C 8/9). PERO la línea `# cfg` de
+  la v1.4 confirmó **placa=ESP32 clásico, pines 25/26 y 21/22** (los de siempre), COM3,
+  chip USB CP210x. Subir: BOOT presionado hasta "Writing", luego EN; Upload Speed 115200.
+  En interfaz_imu (con v1.3) salieron `error_i2c` sueltos (imu1) y "perdidas 12" al mover
+  servos → **firmware v1.4**: I2C 100 kHz, timeout 5 ms, 3 reintentos, reinicio del bus
+  + IMU tras 5 fallos (`# i2c_reiniciado`); `# cfg` informa i2c_hz, reintentos y
+  reinicios. v1.4 cargada: imu1_ok=1 imu2_ok=1. Pendiente: θ1 estimado más corto que la
+  consigna en un escalón (45° de 63°): comprobar físicamente el hombro. IMU1 = 0x68 (AD0 a GND/sin conectar) en el
   eslabón 1; IMU2 = 0x69 (**AD0 a 3V3**) en el eslabón 2. GND de la fuente unido al ESP32.
   (Problema resuelto: con los dos AD0 sin conectar ambas eran 0x68 → NACK.)
 - L1 = 105 mm, L2 = 85 mm (de eje a eje). Calibración en `python/parametros.py`:
