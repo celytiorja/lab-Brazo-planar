@@ -164,7 +164,7 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   `analisis_teleop.py`: omite sesiones < 1 s o dañadas; tabla `configuraciones_q_camara.md`.
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **36 pasan**. Pruebas de punta a punta (no en el
+- Pruebas: `python -m pytest python/` → **37 pasan**. Pruebas de punta a punta (no en el
   repo): DroidCam falso (MJPEG) + ESP32 falso en un pty, con teclas simuladas: OK.
 - Docs: **`docs/GUIA_ENTREGA2.md`** (cada criterio E2 con evidencia, guion de 8 min, qué
   decir con números reales, preguntas difíciles, qué NO decir), `docs/PRUEBA_FINAL.md`,
@@ -247,7 +247,14 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   ⚠️ **IMU1 (hombro) del robot dejó de responder** a los 37.8 s de s03 y toda s04 (w1 = 0.000
   exacto) → `primera_falla_imu` en analisis_teleop las descarta; s04 sin métricas de robot.
   Pedir al usuario revisar el cable/soldadura de la IMU1 (0x68) antes de la demo.
-- Informe: `python/generar_informe.py` → `docs/informe/Informe_Entrega2.docx/.pdf`
+- Informe: el usuario EXIGE **formato IEEE** (dijo que el informe normal era malo). Ahora:
+  `python/generar_informe_ieee.py` → `docs/informe/Informe_Entrega2_IEEE.docx/.pdf` (carta, 2
+  columnas, Times 10, Resumen/Abstract, I. II. versalitas, ecuaciones OMML numeradas, TABLA I,
+  Fig. 1, refs [n]; figuras anchas con salto de sección continuo; `--autores`, `--afiliacion`
+  (FALTAN: nombres, códigos y universidad del usuario; NO inventar), `--foto`). Para el PDF
+  aquí hace falta `libreoffice-math` (apt) o las ecuaciones salen en blanco. El generador
+  viejo `generar_informe.py` queda como lector de datos (`cargar_datos`); sus .docx/.pdf se borraron.
+- (antes) Informe: `python/generar_informe.py` → `docs/informe/Informe_Entrega2.docx/.pdf`
   (teleop marcada SINTÉTICA hasta que haya sesiones reales; `--foto RUTA`). El instrumento
   v2.0 dice que el informe NO se califica (0 %). Guía para el profesor: `docs/LOCALIZADORES_E2.md`.
 - El usuario subió `Rubricas_Lab_3.pdf` (minisumo, EKF/UKF, informe IEEE): confirmó que

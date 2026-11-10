@@ -292,7 +292,7 @@ def graficar_sesion(nombre, extra, carpeta, sint):
         ax.set_ylabel(f"{n} [°]")
         ax.grid(alpha=0.3)
     ejes[0].legend(loc="upper right", fontsize=8, ncol=3)
-    ejes[0].set_title(f"{nombre}: ángulos de tu brazo (gris = la cámara no vio los 3 marcadores)")
+    ejes[0].set_title(f"{nombre}: ángulos del brazo humano (gris = cuadros sin los 3 marcadores)")
     ax = ejes[2]
     ax.step(t, extra["c_crudo"][:, 1], where="post", color="tab:orange", lw=1, label="órdenes si fuera crudo")
     ax.step(t, extra["c_kf"][:, 1], where="post", color="tab:blue", lw=1, label="órdenes con Kalman")
@@ -318,7 +318,7 @@ def graficar_sesion(nombre, extra, carpeta, sint):
         ax.set_ylabel(f"{n} [°] (sin tendencia)")
         ax.legend(loc="upper right", fontsize=8)
         ax.grid(alpha=0.3)
-    ejes[0].set_title(f"{nombre}: lo que se le ordenó al robot vs lo que hizo (IMU del robot)")
+    ejes[0].set_title(f"{nombre}: orden enviada vs movimiento del robot (IMU del robot)")
     ejes[1].set_xlabel("tiempo de la sesión [s]")
     Rp.guardar_figura(fig, carpeta, f"21_robot_{nombre}", sint)
 

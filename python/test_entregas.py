@@ -166,3 +166,17 @@ def test_generar_informe_crea_el_docx(tmp_path):
     ruta, n_fig, n_tab, _ = GI.generar(tmp_path / "informe.docx")
     assert ruta.exists() and ruta.stat().st_size > 10_000
     assert n_tab >= 5 and n_fig >= 5
+
+
+def test_generar_informe_ieee(tmp_path):
+    """Informe IEEE: dos columnas, ecuaciones de Word (OMML), TABLA I... y Fig. 1..."""
+    pytest.importorskip("docx")
+    import generar_informe as GI
+    import generar_informe_ieee as IE
+    if GI.leer_json(GI.E2 / "seleccion_Q.json") is None:
+        pytest.skip("faltan los resultados reales de la Entrega 2")
+    ruta, inf = IE.generar(tmp_path / "ieee.docx", autores=["A (1)"], afiliacion="U")
+    assert ruta.exists() and inf.n_eq >= 10 and inf.n_tab >= 5 and inf.n_fig >= 5
+    xml = inf.doc.element.xml
+    assert 'w:num="2"' in xml and "m:oMath" in xml
+    assert IE.romano(14) == "XIV" and IE.cientifico(1.2e6) == "1,2×10⁶"
