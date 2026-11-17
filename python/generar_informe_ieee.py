@@ -630,6 +630,48 @@ def diagrama_sistema(ruta):
     return ruta
 
 
+FOTOS = SALIDA.parent / "fotos"
+
+
+def _recortar_fondo(img, umbral=232):
+    """Quita el margen claro alrededor de un render CAD (fondo blanco/azulado)."""
+    import numpy as np
+    a = np.asarray(img.convert("L"))
+    filas, cols = np.where(a < umbral)
+    if not len(filas):
+        return img
+    m = 12
+    return img.crop((max(cols.min() - m, 0), max(filas.min() - m, 0),
+                     min(cols.max() + m, img.width), min(filas.max() + m, img.height)))
+
+
+def figura_montaje(ruta):
+    """Une (a) modelo CAD, (b) robot construido y (c) conexionado en una sola figura."""
+    from PIL import Image, ImageDraw, ImageFont
+    nombres = ["modelo_cad.png", "robot_montado.jpg", "conexiones.jpg"]
+    if not all((FOTOS / n).exists() for n in nombres):
+        return None
+    imgs = [Image.open(FOTOS / n).convert("RGB") for n in nombres]
+    imgs[0] = _recortar_fondo(imgs[0])
+    alto = 900
+    imgs = [im.resize((round(im.width * alto / im.height), alto)) for im in imgs]
+    sep, pie = 30, 70
+    lienzo = Image.new("RGB", (sum(im.width for im in imgs) + sep * (len(imgs) - 1), alto + pie), "white")
+    try:
+        fuente = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf", 46)
+    except OSError:
+        fuente = ImageFont.load_default()
+    dib = ImageDraw.Draw(lienzo)
+    x = 0
+    for etiqueta, im in zip("abc", imgs):
+        lienzo.paste(im, (x, 0))
+        w = dib.textlength(f"({etiqueta})", font=fuente)
+        dib.text((x + (im.width - w) / 2, alto + 10), f"({etiqueta})", fill="black", font=fuente)
+        x += im.width + sep
+    lienzo.save(ruta, quality=90)
+    return ruta
+
+
 def metodologia(inf, d, foto):
     inf.seccion("Metodología")
     inf.subseccion("Montaje y adquisición")
@@ -643,7 +685,16 @@ def metodologia(inf, d, foto):
     inf.figura_ancha(diagrama_sistema(SALIDA.parent / "diagrama_sistema.png"),
                      "Diagrama de bloques del sistema de teleoperación. En azul, lo que corre en el PC; en verde, "
                      "el robot; en amarillo, el maestro y la cámara.", 13.5)
-    if foto and Path(foto).exists():
+    montaje = figura_montaje(SALIDA.parent / "montaje.jpg")
+    if montaje:
+        inf.p(f"La Fig. {inf.n_fig + 1} muestra el robot: los eslabones y la base se diseñaron en CAD y se "
+              "imprimieron en 3D; cada MPU-6050 va pegada sobre su eslabón y los cables bajan por el eje del "
+              "hombro hasta la protoboard con el ESP32, donde se unen la tierra de la fuente de los servos y la "
+              "del microcontrolador.")
+        inf.figura_ancha(montaje, "Montaje del brazo planar: (a) modelo CAD de la base y los dos eslabones; "
+                                  "(b) robot impreso con una IMU en cada eslabón; (c) conexionado de las IMU y "
+                                  "los servos al ESP32 en la protoboard.", 17)
+    elif foto and Path(foto).exists():
         inf.figura_columna(foto, "Montaje: brazo planar con las dos IMU, ESP32 y cámara.")
     man = d["manifiesto"] or {}
     inf.subseccion("Datos de ajuste y de validación")
@@ -771,6 +822,15 @@ def resultados(inf, d):
     inf.p("El movimiento voluntario del brazo está por debajo de unos 2 Hz y el temblor fisiológico entre "
           "8 y 12 Hz. Con Q media (f_n = 3 Hz) el primero pasa con menos de 16 ms de retraso y el segundo se "
           f"reduce a la mitad (Tabla {romano(inf.n_tab)}).")
+    if (FOTOS / "interfaz_teleop.png").exists():
+        inf.p(f"La Fig. {inf.n_fig + 1} muestra la interfaz durante una sesión: a la izquierda, el video con los "
+              "tres marcadores ArUco reconocidos (azul el hombro, verde el codo, rojo la muñeca) y los eslabones "
+              "estimados; a la derecha, θ₁ y θ₂ crudos y de Kalman, sus gráficas de los últimos 6 s, el estado "
+              "del robot, la Q y la R de la cámara.")
+        inf.figura_ancha(FOTOS / "interfaz_teleop.png",
+                         "Interfaz de teleoperación grabando una sesión con el robot movido por Kalman (captura de "
+                         "la primera sesión, por la red doméstica a 4,8 cuadros/s; las sesiones analizadas se "
+                         "grabaron después por el punto de acceso del teléfono).", 15)
     tp = d["teleop"]
     if tp is None or not len(tp):
         return
