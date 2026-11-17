@@ -180,3 +180,21 @@ def test_generar_informe_ieee(tmp_path):
     xml = inf.doc.element.xml
     assert 'w:num="2"' in xml and "m:oMath" in xml
     assert IE.romano(14) == "XIV" and IE.cientifico(1.2e6) == "1,2×10⁶"
+
+
+def test_llenar_instrumento_con_anexo(tmp_path, monkeypatch):
+    """El instrumento se diligencia sin tocar las casillas del docente y lleva el Anexo A de resultados."""
+    pytest.importorskip("docx")
+    import argparse
+    import generar_informe as GI
+    import llenar_instrumento as LI
+    if GI.leer_json(GI.E2 / "seleccion_Q.json") is None or not LI.PLANTILLA.exists():
+        pytest.skip("faltan resultados o la plantilla")
+    monkeypatch.setattr(LI, "CARPETA", tmp_path)
+    a = argparse.Namespace(equipo="99", integrantes=["Prueba (1)"], entrega="Prueba", fecha="hoy")
+    salida, ax = LI.generar(a)
+    assert salida.name == "INSTRUMENTO_PDS_KALMAN_ENTREGA_2_Equipo99_v2.0.docx"
+    assert ax.n_fig >= 8 and ax.n_tab >= 8
+    from docx import Document
+    texto = "\n".join(p.text for p in Document(salida).paragraphs)
+    assert "ANEXO A" in texto and "Valor exacto (0–500):" in texto     # la casilla del docente sigue ahí

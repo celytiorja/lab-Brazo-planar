@@ -164,7 +164,7 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   `analisis_teleop.py`: omite sesiones < 1 s o dañadas; tabla `configuraciones_q_camara.md`.
 - Aprendizaje: `kalman_paso_a_paso.py`. Sintéticos: `generar_datos_sinteticos.py`,
   `perfiles.py` (copia de los perfiles del firmware).
-- Pruebas: `python -m pytest python/` → **37 pasan**. Pruebas de punta a punta (no en el
+- Pruebas: `python -m pytest python/` → **38 pasan**. Pruebas de punta a punta (no en el
   repo): DroidCam falso (MJPEG) + ESP32 falso en un pty, con teclas simuladas: OK.
 - Docs: **`docs/GUIA_ENTREGA2.md`** (cada criterio E2 con evidencia, guion de 8 min, qué
   decir con números reales, preguntas difíciles, qué NO decir), `docs/PRUEBA_FINAL.md`,
@@ -260,6 +260,12 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   persona que entrega, fecha, video). Niveles/valores, comprobación individual y cierre = docente
   (vacíos). El instrumento confirma **Programa: Ingeniería Mecatrónica** (universidad NO confirmada;
   no usar "UMNG"). Informe IEEE: autor por defecto "Cely" + afiliación del programa.
+- 2026-11-17 (tarde): "los resultados deben ir en la rúbrica, así lo pidió el profesor" →
+  `python/llenar_instrumento.py` (plantilla en `docs/entrega/plantilla_INSTRUMENTO_…_v2.0.docx`):
+  llena secciones 1, 3 y 4 (localizadores) y agrega **ANEXO A** (A.1 modelo+ecuaciones OMML, A.2 datos
+  y 3 Q, A.3 comparación/aceleración/NIS/límites, A.4 teleop con fotos, interfaz, sesiones y latencia,
+  A.5 preguntas E9). Args `--equipo --integrantes --entrega --fecha`. NO marca niveles/puntajes.
+  Fotos del usuario en `docs/informe/fotos/` (CAD, robot, conexiones, interfaz) también en el informe IEEE.
 - (antes) Informe: `python/generar_informe.py` → `docs/informe/Informe_Entrega2.docx/.pdf`
   (teleop marcada SINTÉTICA hasta que haya sesiones reales; `--foto RUTA`). El instrumento
   v2.0 dice que el informe NO se califica (0 %). Guía para el profesor: `docs/LOCALIZADORES_E2.md`.
