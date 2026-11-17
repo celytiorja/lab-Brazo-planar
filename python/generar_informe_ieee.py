@@ -573,6 +573,63 @@ def teoria(inf, d):
                   Sub("σ", "α"), "=", Fr([Raiz("2"), Sub("σ", "ω")], "Δt")])
 
 
+def diagrama_sistema(ruta):
+    """Diagrama de bloques del sistema (se dibuja con código, igual que las demás figuras)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+    fig, ax = plt.subplots(figsize=(7.2, 3.3), dpi=200)
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 46)
+    ax.axis("off")
+
+    def caja(x, y, w, h, texto, color):
+        ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.4,rounding_size=1.2",
+                                    fc=color, ec="#333333", lw=0.9))
+        ax.text(x + w / 2, y + h / 2, texto, ha="center", va="center", fontsize=7.2,
+                family="serif", linespacing=1.25)
+
+    def flecha(x1, y1, x2, y2, texto="", dy=1.6):
+        ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=9,
+                                     lw=0.9, color="#333333"))
+        if texto:
+            ax.text((x1 + x2) / 2, (y1 + y2) / 2 + dy, texto, ha="center", va="bottom",
+                    fontsize=6.3, family="serif", style="italic")
+
+    persona, pc, robot = "#FFF2CC", "#DAE8FC", "#D5E8D4"
+    # Fila superior: maestro -> PC
+    caja(1, 30, 15, 12, "Brazo humano\n+ 3 ArUco", persona)
+    caja(22, 30, 15, 12, "Cámara del\nteléfono\n(MJPEG, WiFi)", persona)
+    caja(43, 30, 16, 12, "Detección\nArUco → θ₁, θ₂", pc)
+    caja(65, 30, 16, 12, "Kalman de la\ncámara\n[θ₁ ω₁ θ₂ ω₂]", pc)
+    flecha(16.8, 36, 21.2, 36)
+    flecha(37.8, 36, 42.2, 36, "cuadro")
+    flecha(59.8, 36, 64.2, 36, "z = θ")
+    # Fila inferior: robot
+    caja(65, 4, 16, 12, "$\\hat{\\theta}$ → servo\n(cinemática y\ncalibración)", pc)
+    caja(43, 4, 16, 12, "ESP32\n(FreeRTOS,\n100 Hz)", robot)
+    caja(22, 4, 15, 12, "2 servos\nMG996R", robot)
+    caja(1, 4, 15, 12, "Brazo robot\n+ 2 MPU-6050", robot)
+    flecha(73, 29.2, 73, 16.8, "  $\\hat{\\theta}$", dy=-1.2)
+    flecha(64.2, 10, 59.8, 10, "órdenes")
+    flecha(42.2, 10, 37.8, 10, "PWM")
+    flecha(21.2, 10, 16.8, 10)
+    # Realimentación de medida: IMU -> ESP32 -> PC (registro y Kalman de las IMU)
+    caja(86, 17, 13, 12, "Kalman IMU\n[φ₁ ω₁ φ₂ ω₂]\n+ registro", pc)
+    ax.plot([8.5, 92.5, 92.5], [2.4, 2.4, 14.5], ls="--", lw=0.7, color="#777777")
+    ax.add_patch(FancyArrowPatch((92.5, 14.0), (92.5, 16.4), arrowstyle="-|>", mutation_scale=8,
+                                 lw=0.7, color="#777777"))
+    ax.text(72, 0.6, "giroscopios del robot (USB, 460 800 baud)", ha="center", fontsize=6.2,
+            family="serif", color="#555555", style="italic")
+    ax.text(50, 44.5, "PC: Python (detección, Kalman, órdenes, registro)", ha="center", fontsize=6.5,
+            family="serif", color="#1F3A5F")
+    fig.tight_layout(pad=0.2)
+    fig.savefig(ruta)
+    plt.close(fig)
+    return ruta
+
+
 def metodologia(inf, d, foto):
     inf.seccion("Metodología")
     inf.subseccion("Montaje y adquisición")
@@ -580,7 +637,12 @@ def metodologia(inf, d, foto):
           "común, y dos MPU-6050 [6] en el mismo bus I²C (direcciones 0x68 y 0x69), una en cada eslabón "
           "(L₁ = 105 mm, L₂ = 85 mm). El brazo trabaja en el plano horizontal de la mesa. El firmware muestrea "
           "a 100 Hz en una tarea de tiempo real en el núcleo 0 (±500 °/s, filtro interno de 44 Hz), marca cada "
-          "muestra en microsegundos y la envía por USB; el filtro usa ese Δt_k real.")
+          "muestra en microsegundos y la envía por USB; el filtro usa ese Δt_k real. La Fig. "
+          f"{inf.n_fig + 1} resume el sistema: la cámara mide el brazo humano, el PC estima sus ángulos con "
+          "Kalman y ordena los servos, y los giroscopios del robot se registran para validar.")
+    inf.figura_ancha(diagrama_sistema(SALIDA.parent / "diagrama_sistema.png"),
+                     "Diagrama de bloques del sistema de teleoperación. En azul, lo que corre en el PC; en verde, "
+                     "el robot; en amarillo, el maestro y la cámara.", 13.5)
     if foto and Path(foto).exists():
         inf.figura_columna(foto, "Montaje: brazo planar con las dos IMU, ESP32 y cámara.")
     man = d["manifiesto"] or {}
