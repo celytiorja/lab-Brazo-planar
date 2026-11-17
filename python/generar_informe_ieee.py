@@ -881,8 +881,11 @@ def generar(salida=SALIDA, foto=None, autores=None, afiliacion=None):
     foto = foto or foto_por_defecto()
     d = cargar_datos()
     inf = InformeIEEE()
-    encabezado(inf, d, autores or ["Autor 1 (código)", "Autor 2 (código)"],
-               afiliacion or "Programa académico, Universidad, Ciudad, País")
+    # Por defecto, lo confirmado en el instrumento de evaluación (programa, asignatura, periodo) y el
+    # autor de los commits; los nombres completos y códigos se pasan con --autores.
+    encabezado(inf, d, autores or ["Cely"],
+               afiliacion or "Programa de Ingeniería Mecatrónica — Laboratorio de Procesamiento Digital de "
+                             "Señales, periodo 2026-2")
     resumen(inf, d)
     introduccion(inf, d)
     teoria(inf, d)

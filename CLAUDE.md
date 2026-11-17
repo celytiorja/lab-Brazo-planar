@@ -254,6 +254,12 @@ Python (`python/`), todo se ejecuta desde la raíz con `python python/<archivo>.
   (FALTAN: nombres, códigos y universidad del usuario; NO inventar), `--foto`). Para el PDF
   aquí hace falta `libreoffice-math` (apt) o las ecuaciones salen en blanco. El generador
   viejo `generar_informe.py` queda como lector de datos (`cargar_datos`); sus .docx/.pdf se borraron.
+- 2026-11-17: el usuario pasó el instrumento E2 en .docx y pidió llenarlo "con lo que tienes":
+  `docs/entrega/INSTRUMENTO_PDS_KALMAN_ENTREGA_2_EquipoXX_v2.0.docx` (sección 1, E5–E9 y
+  localizadores por criterio; ⟨COMPLETAR⟩ en amarillo: n.º de equipo, códigos, demás integrantes,
+  persona que entrega, fecha, video). Niveles/valores, comprobación individual y cierre = docente
+  (vacíos). El instrumento confirma **Programa: Ingeniería Mecatrónica** (universidad NO confirmada;
+  no usar "UMNG"). Informe IEEE: autor por defecto "Cely" + afiliación del programa.
 - (antes) Informe: `python/generar_informe.py` → `docs/informe/Informe_Entrega2.docx/.pdf`
   (teleop marcada SINTÉTICA hasta que haya sesiones reales; `--foto RUTA`). El instrumento
   v2.0 dice que el informe NO se califica (0 %). Guía para el profesor: `docs/LOCALIZADORES_E2.md`.
